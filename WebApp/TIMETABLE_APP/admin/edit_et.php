@@ -1,8 +1,8 @@
 <?php
 session_start();
 if (!isset($_SESSION['admin'])) { header("Location: login.php"); exit; }
-include "../config/db.php";
-include "../config/functions.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/functions.php";
 
 $id_et = $_GET['id_et'] ?? null;
 if (!$id_et) die("Séance invalide");
@@ -51,7 +51,7 @@ if (isset($_POST['update'])) {
     <link rel="stylesheet" href="../assets/style.css?v=2">
 </head>
 <body>
-    <?php $current_page = 'list'; include '../includes/sidebar.php'; ?>
+    <?php $current_page = 'list'; include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
 
     <div class="main-content">
         <div class="page-header">

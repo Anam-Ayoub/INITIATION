@@ -1,6 +1,6 @@
 <?php
 session_start();
-include "../config/db.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
 
 header('Content-Type: application/json');
 
@@ -15,7 +15,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 switch ($action) {
     case 'get_map':
-        $sql = "SELECT grid_data FROM carte_layout WHERE id = 1";
+        $sql = "SELECT grid_data FROM CARTE_LAYOUT WHERE id = 1";
         $result = $conn->query($sql);
         
         if ($result && $row = $result->fetch_assoc()) {
@@ -35,7 +35,7 @@ switch ($action) {
             $gridData = $conn->real_escape_string($data['grid_data']);
             
             // Upsert the layout
-            $sql = "INSERT INTO carte_layout (id, grid_data) VALUES (1, '$gridData') ON DUPLICATE KEY UPDATE grid_data = '$gridData'";
+            $sql = "INSERT INTO CARTE_LAYOUT (id, grid_data) VALUES (1, '$gridData') ON DUPLICATE KEY UPDATE grid_data = '$gridData'";
             
             if ($conn->query($sql)) {
                 echo json_encode(['success' => true, 'message' => 'Carte sauvegardée avec succès']);
@@ -55,14 +55,14 @@ switch ($action) {
             $nom = $conn->real_escape_string($data['nom']);
             
             // Check if room already exists
-            $check = $conn->query("SELECT ID_SALLE FROM salle WHERE NOM_SALLE = '$nom'");
+            $check = $conn->query("SELECT ID_SALLE FROM SALLE WHERE NOM_SALLE = '$nom'");
             if ($check && $check->num_rows > 0) {
                 // Return existing ID
                 $row = $check->fetch_assoc();
                 echo json_encode(['success' => true, 'id_salle' => $row['ID_SALLE'], 'message' => 'Salle déjà existante']);
             } else {
                 // Insert new room
-                $sql = "INSERT INTO salle (NOM_SALLE, CAPACITE) VALUES ('$nom', 0)";
+                $sql = "INSERT INTO SALLE (NOM_SALLE, CAPACITE) VALUES ('$nom', 0)";
                 if ($conn->query($sql)) {
                     $newId = $conn->insert_id;
                     echo json_encode(['success' => true, 'id_salle' => $newId, 'message' => 'Salle ajoutée']);
@@ -84,8 +84,8 @@ switch ($action) {
             
             // Only delete if it's not being used in the timetable
             // Wait, standard behavior usually allows deleting if cascading, but let's be safe
-            // Let's just delete the room from the `salle` table by name.
-            $sql = "DELETE FROM salle WHERE NOM_SALLE = '$nom'";
+            // Let's just delete the room from the `SALLE` table by name.
+            $sql = "DELETE FROM SALLE WHERE NOM_SALLE = '$nom'";
             if ($conn->query($sql)) {
                 echo json_encode(['success' => true, 'message' => 'Salle supprimée']);
             } else {

@@ -1,6 +1,6 @@
 <?php
 session_start();
-include "../config/db.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
 
 $profs_res = $conn->query("SELECT * FROM PROF ORDER BY NOM_PROF");
 $id_prof = $_GET['id_prof'] ?? null;

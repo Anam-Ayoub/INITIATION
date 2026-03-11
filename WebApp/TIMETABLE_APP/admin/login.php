@@ -1,21 +1,21 @@
 <?php
 session_start();
-include "../config/db.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
 
 if (isset($_POST['login'])) {
     $username = $_POST['username'];
     $password = $_POST['password'];
 
-    $sql = "SELECT * FROM admin WHERE username = ?";
+    $sql = "SELECT * FROM ADMIN WHERE USERNAME = ?";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $username);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($row = $result->fetch_assoc()) {
-        if (password_verify($password, $row['password'])) {
+        if (password_verify($password, $row['PASSWORD'])) {
             session_regenerate_id(true);
-            $_SESSION['admin'] = $row['username'];
+            $_SESSION['admin'] = $row['USERNAME'];
             header("Location: dashboard.php");
             exit();
         } else {

@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['admin'])) { header("Location: login.php"); exit; }
-include "../config/db.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
 
 $sql_text = "
    SELECT e.ID_EMPLOI, e.JOUR, TIME_FORMAT(e.HEURE_DEB, '%H:%i') AS hd, TIME_FORMAT(e.HEURE_FIN, '%H:%i') AS hf,
@@ -26,7 +26,7 @@ $result = $conn->query($sql_text);
     <link rel="stylesheet" href="../assets/style.css?v=2">
 </head>
 <body>
-    <?php $current_page = 'list'; include '../includes/sidebar.php'; ?>
+    <?php $current_page = 'list'; include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
 
     <div class="main-content">
         <div class="page-header">

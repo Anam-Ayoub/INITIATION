@@ -1,6 +1,6 @@
 <?php
 session_start();
-include "../config/db.php";
+include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
 
 $classes_res = $conn->query("SELECT * FROM CLASSE ORDER BY NUMERO");
 $id_classe = $_GET['id_classe'] ?? null;

@@ -154,7 +154,7 @@ if (!isset($_SESSION['admin'])) {
     </style>
 </head>
 <body>
-    <?php $current_page = 'carte'; include '../includes/sidebar.php'; ?>
+    <?php $current_page = 'carte'; include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
 
     <div class="main-content">
         <div class="page-header">
