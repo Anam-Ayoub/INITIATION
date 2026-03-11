@@ -14,6 +14,7 @@ if (isset($_POST['login'])) {
 
     if ($row = $result->fetch_assoc()) {
         if (password_verify($password, $row['password'])) {
+            session_regenerate_id(true);
             $_SESSION['admin'] = $row['username'];
             header("Location: dashboard.php");
             exit();

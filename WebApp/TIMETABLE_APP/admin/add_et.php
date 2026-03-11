@@ -13,7 +13,7 @@ if (isset($_POST['add'])) {
         $jour = $_POST['jour']; $hd = $_POST['heure_debut']; $hf = $_POST['heure_fin'];
         $id_classe = !empty($_POST['new_classe']) ? getOrCreateId($conn, 'CLASSE', 'NUMERO', 'ID_CLASSE', $_POST['new_classe']) : $_POST['id_classe'];
         $id_prof   = !empty($_POST['new_prof'])   ? getOrCreateId($conn, 'PROF', 'NOM_PROF', 'ID_PROF', $_POST['new_prof']) : $_POST['id_prof'];
-        $id_salle  = !empty($_POST['new_salle'])  ? getOrCreateId($conn, 'SALLE', 'NOM_SALLE', 'ID_SALLE', $_POST['new_salle']) : $_POST['id_salle'];
+        $id_salle  = !empty($_POST['id_salle'])   ? $_POST['id_salle'] : null;
         $id_cours  = !empty($_POST['new_cours'])  ? getOrCreateId($conn, 'COURS', 'NOM_COURS', 'ID_COURS', $_POST['new_cours']) : $_POST['id_cours'];
 
         $conflits = [];
@@ -105,14 +105,14 @@ $coursList = $conn->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_CO
 
                     <div class="input-group">
                         <label>Salle</label>
-                        <select name="id_salle">
+                        <select name="id_salle" required>
                             <option value="">— Sélectionner —</option>
                             <?php while($row = $salles->fetch_assoc()): ?>
                                 <option value="<?= $row['ID_SALLE'] ?>"><?= htmlspecialchars($row['NOM_SALLE']) ?></option>
                             <?php endwhile; ?>
                         </select>
-                        <div class="or-text">ou ajouter</div>
-                        <input type="text" name="new_salle" placeholder="Ex: Salle Info">
+                        <div class="or-text">ou ajouter sur la carte</div>
+                        <a href="carte.php" class="btn-map-add">🗺️ Ajouter une salle</a>
                     </div>
 
                     <div class="input-group">

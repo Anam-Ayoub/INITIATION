@@ -8,8 +8,8 @@ $jour_filtre = $_GET['jour'] ?? 'all';
 $sql = "SELECT e.JOUR, TIME_FORMAT(e.HEURE_DEB, '%H:%i') as hd, TIME_FORMAT(e.HEURE_FIN, '%H:%i') as hf,
         s.NOM_SALLE, co.NOM_COURS, c.NUMERO as NOM_CLASSE, p.NOM_PROF
         FROM EMPLOI_DU_TEMPS e
-        JOIN SALLE s ON e.ID_SALLE = s.ID_SALLE JOIN COURS co ON e.ID_COURS = co.ID_COURS
-        JOIN CLASSE c ON e.ID_CLASSE = c.ID_CLASSE JOIN PROF p ON e.ID_PROF = p.ID_PROF";
+        LEFT JOIN SALLE s ON e.ID_SALLE = s.ID_SALLE LEFT JOIN COURS co ON e.ID_COURS = co.ID_COURS
+        LEFT JOIN CLASSE c ON e.ID_CLASSE = c.ID_CLASSE LEFT JOIN PROF p ON e.ID_PROF = p.ID_PROF";
 if ($jour_filtre !== 'all') { $sql .= " WHERE e.JOUR = ?"; }
 $sql .= " ORDER BY FIELD(e.JOUR, 'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'), e.HEURE_DEB";
 
@@ -75,7 +75,7 @@ while($row = $emplois->fetch_assoc()) { $grouped[$row['JOUR']][] = $row; }
                             <div class="session-card">
                                 <div class="session-main">
                                     <span class="session-chip chip-time"><?= $s['hd'] ?> — <?= $s['hf'] ?></span>
-                                    <span class="session-chip chip-room">🏢 Salle <?= htmlspecialchars($s['NOM_SALLE']) ?></span>
+                                    <span class="session-chip chip-room">🏢 <?= htmlspecialchars($s['NOM_SALLE']) ?></span>
                                     <span class="session-chip chip-course"><?= htmlspecialchars($s['NOM_COURS']) ?></span>
                                     <span class="session-chip chip-class">🎓 <?= htmlspecialchars($s['NOM_CLASSE']) ?></span>
                                     <span class="session-chip chip-prof">👨‍🏫 <?= htmlspecialchars($s['NOM_PROF']) ?></span>

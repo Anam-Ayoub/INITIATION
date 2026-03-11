@@ -27,7 +27,7 @@ if (isset($_POST['update'])) {
         $jour = $_POST['jour']; $hd = $_POST['hd']; $hf = $_POST['hf'];
         $id_classe = !empty($_POST['new_classe']) ? getOrCreateId($conn, 'CLASSE', 'NUMERO', 'ID_CLASSE', $_POST['new_classe']) : $_POST['classe'];
         $id_prof   = !empty($_POST['new_prof'])   ? getOrCreateId($conn, 'PROF', 'NOM_PROF', 'ID_PROF', $_POST['new_prof']) : $_POST['prof'];
-        $id_salle  = !empty($_POST['new_salle'])  ? getOrCreateId($conn, 'SALLE', 'NOM_SALLE', 'ID_SALLE', $_POST['new_salle']) : $_POST['salle'];
+        $id_salle  = !empty($_POST['salle'])      ? $_POST['salle'] : null;
         $id_cours  = !empty($_POST['new_cours'])  ? getOrCreateId($conn, 'COURS', 'NOM_COURS', 'ID_COURS', $_POST['new_cours']) : $_POST['cours'];
 
         if (existeConflitUpdate($conn, $jour, $hd, $hf, 'ID_CLASSE', $id_classe, $id_et)) { $error = "Conflit : Classe occupée."; }
@@ -108,13 +108,14 @@ if (isset($_POST['update'])) {
 
                     <div class="input-group">
                         <label>Salle</label>
-                        <select name="salle">
+                        <select name="salle" required>
+                            <option value="">— Sélectionner —</option>
                             <?php while($s=$salles_list->fetch_assoc()): ?>
                                 <option value="<?= $s['ID_SALLE'] ?>" <?= $s['ID_SALLE']==$row['ID_SALLE']?'selected':'' ?>><?= htmlspecialchars($s['NOM_SALLE']) ?></option>
                             <?php endwhile; ?>
                         </select>
-                        <div class="or-text">ou nouvelle</div>
-                        <input type="text" name="new_salle" placeholder="Ex: Salle 15">
+                        <div class="or-text">ou ajouter sur la carte</div>
+                        <a href="carte.php" class="btn-map-add">🗺️ Ajouter une salle</a>
                     </div>
 
                     <div class="input-group">

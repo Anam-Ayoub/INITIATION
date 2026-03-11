@@ -930,3 +930,22 @@ select option {
 .stat-card:nth-child(4) {
     animation-delay: 0.2s;
 }
+
+.btn-map-add {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    background: #e2e8f0;
+    color: #475569;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+}
+
+.btn-map-add:hover {
+    background: var(--success);
+    color: white;
+}

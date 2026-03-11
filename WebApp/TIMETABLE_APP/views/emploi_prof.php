@@ -10,8 +10,8 @@ if ($id_prof) {
     $sql = "SELECT e.*, c.NUMERO as NOM_CLASSE, co.NOM_COURS, s.NOM_SALLE,
             TIME_FORMAT(e.HEURE_DEB, '%H:%i') as hd, TIME_FORMAT(e.HEURE_FIN, '%H:%i') as hf
             FROM EMPLOI_DU_TEMPS e
-            JOIN CLASSE c ON e.ID_CLASSE = c.ID_CLASSE JOIN COURS co ON e.ID_COURS = co.ID_COURS
-            JOIN SALLE s ON e.ID_SALLE = s.ID_SALLE
+            LEFT JOIN CLASSE c ON e.ID_CLASSE = c.ID_CLASSE LEFT JOIN COURS co ON e.ID_COURS = co.ID_COURS
+            LEFT JOIN SALLE s ON e.ID_SALLE = s.ID_SALLE
             WHERE e.ID_PROF = ?
             ORDER BY FIELD(e.JOUR, 'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'), e.HEURE_DEB";
     $stmt = $conn->prepare($sql);
