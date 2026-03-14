@@ -64,7 +64,7 @@ The application relies on a relational schema with 7 core tables:
 ## 🚀 Getting Started
 
 1. Ensure you have a local web server environment like XAMPP, WAMP, or LAMP installed.
-2. Import the provided ``if0_41365925_timetable_system.sql`` file into your MySQL database to structure the tables and seed initial data.
+2. Import the provided `chronos_db.sql` file into your MySQL database to structure the tables and seed initial data.
 3. Update the database connection credentials in ``config/db.php`` to match your local environment.
 4. Launch the application by navigating to the project's root `index.php` in your web browser. 
    *(Default admin credentials: Username: `admin` | Password: `[Check your seeder or reset] `)*

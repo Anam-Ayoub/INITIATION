@@ -1,6 +1,6 @@
 <?php
 $host = "localhost";
-$dbname = "if0_41365925_timetable_system";
+$dbname = "chronos_db";
 $username = "root"; // Nom d'utilisateur par défaut XAMPP/WAMP
 $password = ""; // Mot de passe par défaut XAMPP/WAMP
 
