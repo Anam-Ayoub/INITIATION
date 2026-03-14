@@ -1,8 +1,8 @@
 <?php
 session_start();
 if (!isset($_SESSION['admin'])) { header("Location: login.php"); exit(); }
-include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
-include $_SERVER['DOCUMENT_ROOT'] . "/config/functions.php";
+include __DIR__ . "/../../config/db.php";
+include __DIR__ . "/../../config/functions.php";
 
 $message = "";
 
@@ -34,7 +34,7 @@ $result = $conn->query($sql);
     <link rel="stylesheet" href="../assets/style.css?v=2">
 </head>
 <body>
-    <?php $current_page = 'delete'; include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
+    <?php $current_page = 'delete'; include __DIR__ . '/../includes/sidebar.php'; ?>
 
     <div class="main-content">
         <div class="page-header">

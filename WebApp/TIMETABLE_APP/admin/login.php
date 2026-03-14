@@ -1,6 +1,6 @@
 <?php
 session_start();
-include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
+include __DIR__ . "/../../config/db.php";
 
 if (isset($_POST['login'])) {
     $username = $_POST['username'];

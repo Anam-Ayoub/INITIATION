@@ -1,6 +1,6 @@
 <?php
 session_start();
-include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
+include __DIR__ . "/../../config/db.php";
 
 $jours = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 $jour_filtre = $_GET['jour'] ?? 'all';

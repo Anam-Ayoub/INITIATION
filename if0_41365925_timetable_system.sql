@@ -58,7 +58,7 @@ INSERT INTO `CARTE_LAYOUT` (`id`, `grid_data`) VALUES
 --
 
 INSERT INTO `ADMIN` (`ID_ADMIN`, `USERNAME`, `PASSWORD`) VALUES
-(1, 'admin', '$2y$10$tSZDIoCSfIsAzdf8Cu0bUuUk1EZadQk8agDPQAxbJh0QWSd9SXoL.');
+(1, 'admin', '$2y$10$ZzaFX6VcU3oBWxGLvl0g2u9qu76gIJ5wbqohSaTZZsfBZnlAJ6UKu');
 
 -- --------------------------------------------------------
 
@@ -132,16 +132,18 @@ INSERT INTO `EMPLOI_DU_TEMPS` (`ID_EMPLOI`, `ID_PROF`, `ID_COURS`, `ID_SALLE`, `
 
 CREATE TABLE `PROF` (
   `ID_PROF` int(11) NOT NULL,
-  `NOM_PROF` varchar(100) NOT NULL
+  `NOM_PROF` varchar(100) NOT NULL,
+  `EMAIL` varchar(150) NOT NULL,
+  `PASSWORD` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Déchargement des données de la table `PROF`
 --
 
-INSERT INTO `PROF` (`ID_PROF`, `NOM_PROF`) VALUES
-(1, 'Dr.khourdifi'),
-(2, 'Dr.Chekraoui');
+INSERT INTO `PROF` (`ID_PROF`, `NOM_PROF`, `EMAIL`, `PASSWORD`) VALUES
+(1, 'Dr.khourdifi', 'khourdifi@chronos.edu', '$2y$10$ZzaFX6VcU3oBWxGLvl0g2u9qu76gIJ5wbqohSaTZZsfBZnlAJ6UKu'),
+(2, 'Dr.Chekraoui', 'chekraoui@chronos.edu', '$2y$10$ZzaFX6VcU3oBWxGLvl0g2u9qu76gIJ5wbqohSaTZZsfBZnlAJ6UKu');
 
 -- --------------------------------------------------------
 
@@ -162,6 +164,48 @@ CREATE TABLE `SALLE` (
 INSERT INTO `SALLE` (`ID_SALLE`, `NOM_SALLE`, `CAPACITE`) VALUES
 (1, '1', 0),
 (2, '12', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `STUDENT`
+--
+
+CREATE TABLE `STUDENT` (
+  `ID_STUDENT` int(11) NOT NULL,
+  `FULL_NAME` varchar(150) NOT NULL,
+  `EMAIL` varchar(150) NOT NULL,
+  `PASSWORD` varchar(255) NOT NULL,
+  `ID_CLASSE` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `STUDENT`
+--
+
+INSERT INTO `STUDENT` (`ID_STUDENT`, `FULL_NAME`, `EMAIL`, `PASSWORD`, `ID_CLASSE`) VALUES
+(1, 'John Doe', 'student1@chronos.edu', '$2y$10$ZzaFX6VcU3oBWxGLvl0g2u9qu76gIJ5wbqohSaTZZsfBZnlAJ6UKu', 1),
+(2, 'Jane Smith', 'student2@chronos.edu', '$2y$10$ZzaFX6VcU3oBWxGLvl0g2u9qu76gIJ5wbqohSaTZZsfBZnlAJ6UKu', 2);
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `SECURITY`
+--
+
+CREATE TABLE `SECURITY` (
+  `ID_SEC` int(11) NOT NULL,
+  `FULL_NAME` varchar(150) NOT NULL,
+  `EMAIL` varchar(150) NOT NULL,
+  `PASSWORD` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Déchargement des données de la table `SECURITY`
+--
+
+INSERT INTO `SECURITY` (`ID_SEC`, `FULL_NAME`, `EMAIL`, `PASSWORD`) VALUES
+(1, 'Guard Michel', 'security@chronos.edu', '$2y$10$ZzaFX6VcU3oBWxGLvl0g2u9qu76gIJ5wbqohSaTZZsfBZnlAJ6UKu');
 
 --
 -- Index pour les tables déchargées
@@ -206,13 +250,29 @@ ALTER TABLE `EMPLOI_DU_TEMPS`
 -- Index pour la table `PROF`
 --
 ALTER TABLE `PROF`
-  ADD PRIMARY KEY (`ID_PROF`);
+  ADD PRIMARY KEY (`ID_PROF`),
+  ADD UNIQUE KEY `EMAIL` (`EMAIL`);
 
 --
 -- Index pour la table `SALLE`
 --
 ALTER TABLE `SALLE`
   ADD PRIMARY KEY (`ID_SALLE`);
+
+--
+-- Index pour la table `STUDENT`
+--
+ALTER TABLE `STUDENT`
+  ADD PRIMARY KEY (`ID_STUDENT`),
+  ADD UNIQUE KEY `EMAIL` (`EMAIL`),
+  ADD KEY `ID_CLASSE` (`ID_CLASSE`);
+
+--
+-- Index pour la table `SECURITY`
+--
+ALTER TABLE `SECURITY`
+  ADD PRIMARY KEY (`ID_SEC`),
+  ADD UNIQUE KEY `EMAIL` (`EMAIL`);
 
 --
 -- AUTO_INCREMENT pour les tables déchargées
@@ -261,6 +321,18 @@ ALTER TABLE `SALLE`
   MODIFY `ID_SALLE` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT pour la table `STUDENT`
+--
+ALTER TABLE `STUDENT`
+  MODIFY `ID_STUDENT` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT pour la table `SECURITY`
+--
+ALTER TABLE `SECURITY`
+  MODIFY `ID_SEC` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- Contraintes pour les tables déchargées
 --
 
@@ -272,5 +344,11 @@ ALTER TABLE `EMPLOI_DU_TEMPS`
   ADD CONSTRAINT `emploi_du_temps_ibfk_2` FOREIGN KEY (`ID_COURS`) REFERENCES `COURS` (`ID_COURS`),
   ADD CONSTRAINT `emploi_du_temps_ibfk_3` FOREIGN KEY (`ID_SALLE`) REFERENCES `SALLE` (`ID_SALLE`),
   ADD CONSTRAINT `emploi_du_temps_ibfk_4` FOREIGN KEY (`ID_CLASSE`) REFERENCES `CLASSE` (`ID_CLASSE`);
+
+--
+-- Contraintes pour la table `STUDENT`
+--
+ALTER TABLE `STUDENT`
+  ADD CONSTRAINT `student_ibfk_1` FOREIGN KEY (`ID_CLASSE`) REFERENCES `CLASSE` (`ID_CLASSE`);
 --
 

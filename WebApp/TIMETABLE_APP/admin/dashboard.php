@@ -4,7 +4,7 @@ if(!isset($_SESSION['admin'])){
    header("Location: login.php");
    exit();
 }
-include $_SERVER['DOCUMENT_ROOT'] . "/config/db.php";
+include __DIR__ . "/../../config/db.php";
 
 $total_seances  = $conn->query("SELECT COUNT(*) as c FROM EMPLOI_DU_TEMPS")->fetch_assoc()['c'];
 $total_classes  = $conn->query("SELECT COUNT(*) as c FROM CLASSE")->fetch_assoc()['c'];
@@ -20,7 +20,7 @@ $total_salles   = $conn->query("SELECT COUNT(*) as c FROM SALLE")->fetch_assoc()
    <link rel="stylesheet" href="../assets/style.css?v=2">
 </head>
 <body>
-    <?php $current_page = 'dashboard'; include $_SERVER['DOCUMENT_ROOT'] . '/includes/sidebar.php'; ?>
+    <?php $current_page = 'dashboard'; include __DIR__ . '/../includes/sidebar.php'; ?>
 
     <div class="main-content">
         <div class="page-header">

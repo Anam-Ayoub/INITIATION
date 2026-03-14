@@ -1,17 +1,16 @@
 <?php
-
 /* =============================================================
-   Shared Functions — Chronos-SIIA
+   Fonctions Partagées — Chronos-SIIA
    ============================================================= */
 
 /**
- * Get an existing ID or create a new record in a lookup table.
- * Used for auto-creating professors, classes, rooms, courses.
+ * Obtenir un ID existant ou créer un nouvel enregistrement dans une table de référence.
+ * Utilisé pour la création automatique de professeurs, classes, salles, cours.
  */
 function getOrCreateId($conn, $table, $column_name, $id_column, $value) {
     if (empty($value)) return null;
 
-    // Check if the element already exists
+    // Vérifier si l'élément existe déjà
     $stmt = $conn->prepare("SELECT $id_column FROM $table WHERE $column_name = ?");
     $stmt->bind_param("s", $value);
     $stmt->execute();
@@ -20,7 +19,7 @@ function getOrCreateId($conn, $table, $column_name, $id_column, $value) {
     if ($row = $result->fetch_assoc()) {
         return $row[$id_column];
     } else {
-        // Create it
+        // Le créer
         $stmt_ins = $conn->prepare("INSERT INTO $table ($column_name) VALUES (?)");
         $stmt_ins->bind_param("s", $value);
         $stmt_ins->execute();
@@ -29,8 +28,8 @@ function getOrCreateId($conn, $table, $column_name, $id_column, $value) {
 }
 
 /**
- * Check for scheduling conflicts (for INSERT).
- * Returns true if a conflict exists.
+ * Vérifier les conflits de planification (pour l'insertion).
+ * Retourne vrai si un conflit existe.
  */
 function existeConflit($conn, $jour, $hd, $hf, $colonne, $valeur) {
     if (!$valeur) return false;
@@ -47,8 +46,8 @@ function existeConflit($conn, $jour, $hd, $hf, $colonne, $valeur) {
 }
 
 /**
- * Check for scheduling conflicts (for UPDATE).
- * Excludes the current record being updated.
+ * Vérifier les conflits de planification (pour la mise à jour).
+ * Exclut l'enregistrement actuel en cours de mise à jour.
  */
 function existeConflitUpdate($conn, $jour, $hd, $hf, $colonne, $valeur, $id_actuel) {
     if (!$valeur) return false;
@@ -69,9 +68,12 @@ function existeConflitUpdate($conn, $jour, $hd, $hf, $colonne, $valeur, $id_actu
 }
 
 /**
- * Generate a CSRF token and store it in the session.
+ * Génère de manière sécurisée les jetons CSRF et le stocke dans la session.
  */
 function generateCsrfToken() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     if (empty($_SESSION['csrf_token'])) {
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
@@ -79,16 +81,54 @@ function generateCsrfToken() {
 }
 
 /**
- * Validate a submitted CSRF token against the session token.
+ * Vérifier un jeton CSRF soumis par rapport au jeton de la session.
  */
 function validateCsrfToken($token) {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+// Alias for Users_interface backward compatibility
+function verifyCsrfToken($token) {
+    return validateCsrfToken($token);
+}
+
 /**
- * Output a hidden CSRF input field for use in forms.
+ * Affiche un champ d'entrée CSRF caché pour une utilisation dans les formulaires.
  */
 function csrfField() {
     $token = generateCsrfToken();
     echo '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
 }
+
+/**
+ * Vérifie si un étudiant est connecté, redirige vers l'index (connexion) sinon.
+ */
+function requireLogin() {
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+    if (!isset($_SESSION['STUDENT_ID'])) {
+        header("Location: index.php");
+        exit;
+    }
+}
+
+/**
+ * Mappe une chaîne de jour en un nombre pour le tri ou la mise en page.
+ */
+function getDayNumber($dayStr) {
+    $days = [
+        'Lundi' => 1,
+        'Mardi' => 2,
+        'Mercredi' => 3,
+        'Jeudi' => 4,
+        'Vendredi' => 5,
+        'Samedi' => 6
+    ];
+    return $days[$dayStr] ?? 7;
+}
+
+?>

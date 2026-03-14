@@ -18,7 +18,7 @@ CHRONOS is an intelligent, web-based platform designed to manage and consult uni
 
 - **Frontend:** HTML5, CSS3 (Vanilla flexbox/grid with a modern glassmorphism aesthetic), JavaScript.
 - **Backend:** PHP (Vanilla)
-- **Database:** MySQL / MariaDB
+- **Database:** MySQL
 
 ## 📂 Project Structure
 
