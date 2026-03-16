@@ -4,6 +4,7 @@ import '../models/user.dart';
 import '../services/auth_service.dart';
 import '../services/timetable_service.dart';
 import 'login_screen.dart';
+import 'map_view.dart';
 import '../widgets/session_card.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   int _selectedIndex = 0;
+  bool _showMapView = false;
 
   final List<String> _days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 
@@ -62,6 +64,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If map view is active, show the MapView widget
+    if (_showMapView) {
+      return Scaffold(
+        body: const MapView(),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => setState(() => _showMapView = false),
+          icon: const Icon(Icons.calendar_today),
+          label: const Text('Emploi'),
+          backgroundColor: const Color(0xFF4F46E5),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: _isLoading
@@ -76,6 +91,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _buildProfileView(),
                   ],
                 ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => setState(() => _showMapView = true),
+        icon: const Icon(Icons.map),
+        label: const Text('Carte'),
+        backgroundColor: const Color(0xFF4F46E5),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
