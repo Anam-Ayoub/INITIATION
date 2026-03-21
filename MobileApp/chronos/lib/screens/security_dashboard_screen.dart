@@ -153,12 +153,23 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              setState(() => _isLoading = true);
-              _loadData();
-            },
-            child: const Text('Réessayer'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  setState(() => _isLoading = true);
+                  _loadData();
+                },
+                child: const Text('Réessayer'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton(
+                onPressed: _logout,
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Se déconnecter'),
+              ),
+            ],
           ),
         ],
       ),

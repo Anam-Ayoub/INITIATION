@@ -4,8 +4,25 @@ import 'screens/dashboard_screen.dart';
 import 'screens/professor_dashboard_screen.dart';
 import 'screens/security_dashboard_screen.dart';
 import 'services/auth_service.dart';
+import 'services/api_service.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Register unauthorized callback
+  ApiService.setOnUnauthorized(() async {
+    // Clear all local data
+    await AuthService.forceLogout();
+
+    // Redirect to login screen
+    navigatorKey.currentState?.pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  });
+
   runApp(const MyApp());
 }
 
@@ -15,6 +32,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'Chronos',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

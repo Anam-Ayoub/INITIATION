@@ -18,9 +18,9 @@ class Session {
   factory Session.fromJson(Map<String, dynamic> json) {
     return Session(
       id: json['id'] ?? 0,
-      course: json['course'] ?? 'Unknown Course',
-      professor: json['professor'] ?? 'Unknown Professor',
-      room: json['room'] ?? 'N/A',
+      course: json['course'] ?? 'Cours inconnu',
+      professor: json['professor'] ?? 'Professeur inconnu',
+      room: json['room'] ?? 'S/O',
       startTime: json['start_time'] ?? '00:00',
       endTime: json['end_time'] ?? '00:00',
     );

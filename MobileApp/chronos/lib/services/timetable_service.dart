@@ -88,9 +88,9 @@ class ProfSession {
   factory ProfSession.fromJson(Map<String, dynamic> json) {
     return ProfSession(
       id: json['id'] ?? 0,
-      course: json['course'] ?? 'Unknown Course',
-      className: json['class'] ?? 'Unknown Class',
-      room: json['room'] ?? 'N/A',
+      course: json['course'] ?? 'Cours inconnu',
+      className: json['class'] ?? 'Classe inconnue',
+      room: json['room'] ?? 'S/O',
       startTime: json['start_time'] ?? '00:00',
       endTime: json['end_time'] ?? '00:00',
     );
@@ -126,11 +126,11 @@ class SecuritySession {
   factory SecuritySession.fromJson(Map<String, dynamic> json) {
     return SecuritySession(
       id: json['id'] ?? 0,
-      course: json['course'] ?? 'Unknown Course',
-      className: json['class'] ?? 'Unknown Class',
+      course: json['course'] ?? 'Cours inconnu',
+      className: json['class'] ?? 'Classe inconnue',
       classId: json['class_id'] ?? 0,
-      professor: json['professor'] ?? 'Unknown Professor',
-      room: json['room'] ?? 'N/A',
+      professor: json['professor'] ?? 'Professeur inconnu',
+      room: json['room'] ?? 'S/O',
       roomId: json['room_id'] ?? 0,
       startTime: json['start_time'] ?? '00:00',
       endTime: json['end_time'] ?? '00:00',

@@ -29,12 +29,27 @@ class AuthService {
   /// Logout user and clear stored data
   static Future<void> logout() async {
     try {
-      await ApiService.post('auth/logout.php');
+      // Get the current token to revoke it on server
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString(_tokenKey);
+      
+      if (token != null) {
+        await ApiService.post('auth/logout.php', requireAuth: true);
+      }
     } catch (e) {
-      // Ignore API errors on logout
+      // Ignore API errors on logout - we want to clear local data anyway
     }
 
-    // Clear stored data
+    await clearLocalData();
+  }
+
+  /// Force logout without calling server (used for expired sessions)
+  static Future<void> forceLogout() async {
+    await clearLocalData();
+  }
+
+  /// Clear all local authentication data
+  static Future<void> clearLocalData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);

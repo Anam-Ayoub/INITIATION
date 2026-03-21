@@ -1,4 +1,4 @@
-# chronos
+# Chronos
 
 A new Flutter project.
 

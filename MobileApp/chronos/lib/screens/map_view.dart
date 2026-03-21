@@ -54,7 +54,7 @@ class _MapViewState extends State<MapView> {
       setState(() => _isLoading = false);
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load map: $e';
+        _errorMessage = 'Échec du chargement de la carte: $e';
         _isLoading = false;
       });
     }

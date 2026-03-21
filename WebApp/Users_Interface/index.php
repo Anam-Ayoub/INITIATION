@@ -14,7 +14,7 @@ $error = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Basic CSRF verification
     if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
-        $error = "Session expired or invalid token. Please try again.";
+        $error = "Session expirée ou jeton invalide. Veuillez réessayer.";
     } else {
         $email = trim($_POST['email']);
         $password = $_POST['password'];

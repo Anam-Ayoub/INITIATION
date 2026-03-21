@@ -64,7 +64,8 @@ function getAuthUser($pdo) {
     $tokenData = validateToken($pdo);
     
     if (!$tokenData) {
-        jsonResponse(false, null, 'Invalid or expired token');
+        http_response_code(401);
+        jsonResponse(false, null, 'Session expirée. Veuillez vous reconnecter.');
     }
     
     return $tokenData;
