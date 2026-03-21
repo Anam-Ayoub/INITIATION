@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import 'api_service.dart';
+import 'map_service.dart';
 
 class AuthService {
   static const String _tokenKey = 'auth_token';
@@ -38,6 +39,7 @@ class AuthService {
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
     ApiService.clearAuthToken();
+    MapService.clearCache();
   }
 
   /// Check if user is authenticated

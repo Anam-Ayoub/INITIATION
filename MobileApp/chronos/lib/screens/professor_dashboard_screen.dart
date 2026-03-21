@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/timetable_service.dart';
 import 'login_screen.dart';
+import 'map_view.dart';
 
 class ProfessorDashboardScreen extends StatefulWidget {
   const ProfessorDashboardScreen({super.key});
 
   @override
-  State<ProfessorDashboardScreen> createState() => _ProfessorDashboardScreenState();
+  State<ProfessorDashboardScreen> createState() =>
+      _ProfessorDashboardScreenState();
 }
 
 class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
@@ -17,8 +19,16 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   int _selectedIndex = 0;
+  bool _showMapView = false;
 
-  final List<String> _days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  final List<String> _days = [
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+  ];
 
   @override
   void initState() {
@@ -51,28 +61,47 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
   Future<void> _logout() async {
     await AuthService.logout();
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // If map view is active, show the MapView widget
+    if (_showMapView) {
+      return Scaffold(
+        body: const MapView(),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => setState(() => _showMapView = false),
+          icon: const Icon(Icons.calendar_today, color: Colors.white),
+          label: const Text('Emploi', style: TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFF4F46E5),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? _buildErrorView()
-              : IndexedStack(
-                  index: _selectedIndex,
-                  children: [
-                    _buildDayView(),
-                    _buildWeekView(),
-                    _buildProfileView(),
-                  ],
-                ),
+          ? _buildErrorView()
+          : IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildDayView(),
+                _buildWeekView(),
+                _buildProfileView(),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => setState(() => _showMapView = true),
+        icon: const Icon(Icons.map, color: Colors.white),
+        label: const Text('Carte', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF4F46E5),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
@@ -89,10 +118,7 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
             icon: Icon(Icons.calendar_view_week),
             label: 'Semaine',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
     );
@@ -176,7 +202,10 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -236,12 +265,9 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return _buildProfSessionCard(sessions[index]);
-                  },
-                  childCount: sessions.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return _buildProfSessionCard(sessions[index]);
+                }, childCount: sessions.length),
               ),
             ),
         ],
@@ -287,69 +313,69 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final day = _days[index];
-                  final sessions = _schedule[day] ?? [];
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final day = _days[index];
+                final sessions = _schedule[day] ?? [];
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4F46E5).withOpacity(0.05),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                day,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                  color: Color(0xFF4F46E5),
-                                ),
-                              ),
-                              Text(
-                                '${sessions.length} cours',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5).withOpacity(0.05),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
                           ),
                         ),
-                        if (sessions.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'Aucun cours',
-                              style: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontStyle: FontStyle.italic,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              day,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: Color(0xFF4F46E5),
                               ),
                             ),
-                          )
-                        else
-                          ...sessions.map((session) => _buildProfSessionCard(session, compact: true)),
-                      ],
-                    ),
-                  );
-                },
-                childCount: _days.length,
-              ),
+                            Text(
+                              '${sessions.length} cours',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (sessions.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Aucun cours',
+                            style: TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        )
+                      else
+                        ...sessions.map(
+                          (session) =>
+                              _buildProfSessionCard(session, compact: true),
+                        ),
+                    ],
+                  ),
+                );
+              }, childCount: _days.length),
             ),
           ),
         ],
@@ -447,7 +473,11 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
 
   Widget _buildProfSessionCard(ProfSession session, {bool compact = false}) {
     return Card(
-      margin: EdgeInsets.only(bottom: compact ? 8 : 12, left: compact ? 12 : 16, right: compact ? 12 : 16),
+      margin: EdgeInsets.only(
+        bottom: compact ? 8 : 12,
+        left: compact ? 12 : 16,
+        right: compact ? 12 : 16,
+      ),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -459,10 +489,7 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              const Color(0xFFF9FAFB),
-            ],
+            colors: [Colors.white, const Color(0xFFF9FAFB)],
           ),
         ),
         child: Padding(
@@ -471,7 +498,10 @@ class _ProfessorDashboardScreenState extends State<ProfessorDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF4F46E5).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),

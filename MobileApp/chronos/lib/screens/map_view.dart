@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/map_service.dart';
-import '../widgets/date_switcher.dart';
-import 'dart:math' as math;
+import '../widgets/weekly_day_switcher.dart';
 
 class MapView extends StatefulWidget {
   const MapView({super.key});
@@ -11,14 +10,13 @@ class MapView extends StatefulWidget {
 }
 
 class _MapViewState extends State<MapView> {
-  Map<String, dynamic>? _mapLayout;
   List<dynamic> _classrooms = [];
   List<dynamic> _roads = [];
   List<dynamic> _entrances = [];
   Map<int, List<dynamic>> _sessionsByRoom = {};
   Set<int> _activeRoomIds = {};
 
-  DateTime _selectedDate = DateTime.now();
+  int _selectedDayIndex = 0; // 0 = Lundi, 5 = Samedi
   bool _isLoading = true;
   String? _errorMessage;
 
@@ -26,14 +24,14 @@ class _MapViewState extends State<MapView> {
   static const int _gridWidth = 30;
   static const int _gridHeight = 20;
   static const double _cellSize = 40;
-  static const double _roadWidth = 30;
 
   // Colors
-  static const Color _entranceColor = Color(0xFFB0C4DE); // Desaturated light blue
-  static const Color _roadColor = Color(0xFFB0C4DE);     // Desaturated light blue
-  static const Color _classroomActive = Color(0xFF10B981);  // Green when session scheduled
-  static const Color _classroomInactive = Color(0xFF9CA3AF); // Grey when no session
+  static const Color _entranceColor = Color(0xFFB0C4DE);
+  static const Color _roadColor = Color(0xFFB0C4DE);
+  static const Color _classroomActive = Color(0xFF10B981);
+  static const Color _classroomInactive = Color(0xFF9CA3AF);
   static const Color _backgroundColor = Color(0xFFF8FAFC);
+  static const Color _greyDotColor = Color(0xFFD1D5DB);
 
   @override
   void initState() {
@@ -45,18 +43,13 @@ class _MapViewState extends State<MapView> {
     try {
       setState(() => _isLoading = true);
 
-      // Load map layout
       final layout = await MapService.getMapLayout();
-      _mapLayout = layout;
       _classrooms = layout['classrooms'] ?? [];
       _roads = layout['roads'] ?? [];
       _entrances = layout['entrances'] ?? [];
 
-      // Load sessions for selected date
-      await _loadSessionsForDate(_selectedDate);
-
-      // Preload nearby dates for smooth navigation
-      _preloadNearbyDates();
+      await _loadSessionsForDay(_selectedDayIndex);
+      MapService.preloadAllDays();
 
       setState(() => _isLoading = false);
     } catch (e) {
@@ -67,10 +60,11 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  Future<void> _loadSessionsForDate(DateTime date) async {
+  Future<void> _loadSessionsForDay(int dayIndex) async {
     try {
-      final sessions = await MapService.getSessionsByDate(date);
-      final sessionsByRoom = sessions['sessions_by_room'] as Map<String, dynamic>? ?? {};
+      final sessions = await MapService.getSessionsByDay(dayIndex);
+      final sessionsByRoom =
+          sessions['sessions_by_room'] as Map<String, dynamic>? ?? {};
       final activeRoomIds = sessions['active_room_ids'] as List<dynamic>? ?? [];
 
       setState(() {
@@ -80,7 +74,6 @@ class _MapViewState extends State<MapView> {
         _activeRoomIds = activeRoomIds.map((id) => id as int).toSet();
       });
     } catch (e) {
-      // Silently fail - rooms will show as inactive
       setState(() {
         _sessionsByRoom = {};
         _activeRoomIds = {};
@@ -88,19 +81,9 @@ class _MapViewState extends State<MapView> {
     }
   }
 
-  void _preloadNearbyDates() {
-    // Preload yesterday and tomorrow for smooth navigation
-    final dates = [
-      _selectedDate.subtract(const Duration(days: 1)),
-      _selectedDate.add(const Duration(days: 1)),
-    ];
-    MapService.preloadSessions(dates);
-  }
-
-  void _onDateChanged(DateTime newDate) {
-    setState(() => _selectedDate = newDate);
-    _loadSessionsForDate(newDate);
-    _preloadNearbyDates();
+  void _onDayChanged(int newDayIndex) {
+    setState(() => _selectedDayIndex = newDayIndex);
+    _loadSessionsForDay(newDayIndex);
   }
 
   @override
@@ -113,9 +96,9 @@ class _MapViewState extends State<MapView> {
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: DateSwitcher(
-                selectedDate: _selectedDate,
-                onDateChanged: _onDateChanged,
+              child: WeeklyDaySwitcher(
+                selectedDayIndex: _selectedDayIndex,
+                onDayChanged: _onDayChanged,
               ),
             ),
           ),
@@ -128,8 +111,8 @@ class _MapViewState extends State<MapView> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _errorMessage != null
-                    ? _buildErrorView()
-                    : _buildMap(),
+                ? _buildErrorView()
+                : _buildMap(),
           ),
         ],
       ),
@@ -148,36 +131,26 @@ class _MapViewState extends State<MapView> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _legendItem('Entrée', _entranceColor),
-          const SizedBox(width: 24),
-          _legendItem('Route', _roadColor),
-          const SizedBox(width: 24),
-          _legendItem('Salle occupée', _classroomActive),
-          const SizedBox(width: 24),
-          _legendItem('Salle libre', _classroomInactive),
+          _legendItemWithDot('Hors carte', _greyDotColor),
+          const SizedBox(width: 16),
+          _legendItemWithDot('Route/Entrée', _roadColor),
+          const SizedBox(width: 16),
+          _legendItemWithDot('Salle occupée', _classroomActive),
+          const SizedBox(width: 16),
+          _legendItemWithDot('Salle libre', _classroomInactive),
         ],
       ),
     );
   }
 
-  Widget _legendItem(String label, Color color) {
+  Widget _legendItemWithDot(String label, Color color) {
     return Row(
       children: [
-        Container(
-          width: 16,
-          height: 16,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
+        CircleAvatar(radius: 6, backgroundColor: color),
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: Color(0xFF6B7280),
-          ),
+          style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
         ),
       ],
     );
@@ -215,10 +188,7 @@ class _MapViewState extends State<MapView> {
             const SizedBox(height: 16),
             Text(
               'Aucune carte disponible',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
             ),
           ],
         ),
@@ -247,11 +217,12 @@ class _MapViewState extends State<MapView> {
                   entrances: _entrances,
                   activeRoomIds: _activeRoomIds,
                   sessionsByRoom: _sessionsByRoom,
-                  selectedDate: _selectedDate,
+                  selectedDayIndex: _selectedDayIndex,
                   entranceColor: _entranceColor,
                   roadColor: _roadColor,
                   classroomActive: _classroomActive,
                   classroomInactive: _classroomInactive,
+                  greyDotColor: _greyDotColor,
                   onClassroomTap: _onClassroomTap,
                 ),
               ),
@@ -272,7 +243,7 @@ class _MapViewState extends State<MapView> {
       builder: (context) => _ClassroomDetailsSheet(
         roomName: roomName,
         sessions: sessions,
-        selectedDate: _selectedDate,
+        selectedDay: MapService.days[_selectedDayIndex],
       ),
     );
   }
@@ -284,11 +255,12 @@ class _MapGridPainter extends CustomPainter {
   final List<dynamic> entrances;
   final Set<int> activeRoomIds;
   final Map<int, List<dynamic>> sessionsByRoom;
-  final DateTime selectedDate;
+  final int selectedDayIndex;
   final Color entranceColor;
   final Color roadColor;
   final Color classroomActive;
   final Color classroomInactive;
+  final Color greyDotColor;
   final Function(dynamic) onClassroomTap;
 
   _MapGridPainter({
@@ -297,22 +269,19 @@ class _MapGridPainter extends CustomPainter {
     required this.entrances,
     required this.activeRoomIds,
     required this.sessionsByRoom,
-    required this.selectedDate,
+    required this.selectedDayIndex,
     required this.entranceColor,
     required this.roadColor,
     required this.classroomActive,
     required this.classroomInactive,
+    required this.greyDotColor,
     required this.onClassroomTap,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw background
-    final bgPaint = Paint()..color = const Color(0xFFF8FAFC);
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height),
-      bgPaint,
-    );
+    // Draw grey dots for background/empty areas
+    _drawBackgroundDots(canvas, size);
 
     // Draw grid lines
     _drawGridLines(canvas, size);
@@ -330,6 +299,21 @@ class _MapGridPainter extends CustomPainter {
     // Draw classrooms
     for (final classroom in classrooms) {
       _drawClassroom(canvas, classroom);
+    }
+  }
+
+  void _drawBackgroundDots(Canvas canvas, Size size) {
+    final dotPaint = Paint()
+      ..color = greyDotColor
+      ..style = PaintingStyle.fill;
+
+    // Draw dots in a grid pattern for empty background
+    for (int row = 0; row < 20; row++) {
+      for (int col = 0; col < 30; col++) {
+        final x = col * 40 + 20;
+        final y = row * 40 + 20;
+        canvas.drawCircle(Offset(x.toDouble(), y.toDouble()), 2, dotPaint);
+      }
     }
   }
 
@@ -359,12 +343,7 @@ class _MapGridPainter extends CustomPainter {
       ..color = roadColor
       ..style = PaintingStyle.fill;
 
-    final rect = Rect.fromLTWH(
-      col * 40 + 5,
-      row * 40 + 5,
-      30,
-      30,
-    );
+    final rect = Rect.fromLTWH(col * 40 + 5, row * 40 + 5, 30, 30);
 
     canvas.drawRect(rect, paint);
   }
@@ -372,18 +351,12 @@ class _MapGridPainter extends CustomPainter {
   void _drawEntrance(Canvas canvas, dynamic entrance) {
     final row = entrance['row'] as int;
     final col = entrance['col'] as int;
-    final name = entrance['name'] as String? ?? 'Entrée';
 
     final paint = Paint()
       ..color = entranceColor
       ..style = PaintingStyle.fill;
 
-    final rect = Rect.fromLTWH(
-      col * 40 + 2,
-      row * 40 + 2,
-      36,
-      36,
-    );
+    final rect = Rect.fromLTWH(col * 40 + 2, row * 40 + 2, 36, 36);
 
     // Draw rounded rect for entrance
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(6));
@@ -423,23 +396,16 @@ class _MapGridPainter extends CustomPainter {
     final col = classroom['col'] as int;
     final roomId = classroom['room_id'] as int;
     final name = classroom['name'] as String;
+    final sessions = sessionsByRoom[roomId] ?? [];
+    final hasSessions = sessions.isNotEmpty;
 
-    // Determine color based on whether room has sessions
-    final hasSessions = activeRoomIds.contains(roomId);
     final color = hasSessions ? classroomActive : classroomInactive;
 
     final paint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
 
-    final rect = Rect.fromLTWH(
-      col * 40 + 2,
-      row * 40 + 2,
-      36,
-      36,
-    );
-
-    // Draw rounded rect
+    final rect = Rect.fromLTWH(col * 40 + 2, row * 40 + 2, 36, 36);
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(6));
     canvas.drawRRect(rrect, paint);
 
@@ -450,27 +416,80 @@ class _MapGridPainter extends CustomPainter {
       ..strokeWidth = 2;
     canvas.drawRRect(rrect, borderPaint);
 
-    // Draw room name
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: name,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
+    // If has sessions, draw subject name above and start time inside
+    if (hasSessions && sessions.isNotEmpty) {
+      final session = sessions.first;
+      final courseName = session['course'] as String? ?? 'Cours';
+      final startTime = session['start_time'] as String? ?? '--:--';
+
+      // Draw subject name above the cell
+      final subjectTextPainter = TextPainter(
+        text: TextSpan(
+          text: courseName.length > 12
+              ? '${courseName.substring(0, 12)}...'
+              : courseName,
+          style: const TextStyle(
+            color: Color(0xFF1F2937),
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
-      textDirection: TextDirection.ltr,
-      textAlign: TextAlign.center,
-    );
-    textPainter.layout(maxWidth: 32);
-    textPainter.paint(
-      canvas,
-      Offset(
-        col * 40 + 20 - textPainter.width / 2,
-        row * 40 + 20 - textPainter.height / 2,
-      ),
-    );
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
+      );
+      subjectTextPainter.layout(maxWidth: 40);
+      subjectTextPainter.paint(
+        canvas,
+        Offset(
+          col * 40 + 20 - subjectTextPainter.width / 2,
+          row * 40 - subjectTextPainter.height - 2,
+        ),
+      );
+
+      // Draw start time inside the cell
+      final timeTextPainter = TextPainter(
+        text: TextSpan(
+          text: startTime,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
+      );
+      timeTextPainter.layout(maxWidth: 32);
+      timeTextPainter.paint(
+        canvas,
+        Offset(
+          col * 40 + 20 - timeTextPainter.width / 2,
+          row * 40 + 20 - timeTextPainter.height / 2,
+        ),
+      );
+    } else {
+      // Draw room name for inactive classrooms
+      final textPainter = TextPainter(
+        text: TextSpan(
+          text: name,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+        textAlign: TextAlign.center,
+      );
+      textPainter.layout(maxWidth: 32);
+      textPainter.paint(
+        canvas,
+        Offset(
+          col * 40 + 20 - textPainter.width / 2,
+          row * 40 + 20 - textPainter.height / 2,
+        ),
+      );
+    }
   }
 
   @override
@@ -483,19 +502,16 @@ class _MapGridPainter extends CustomPainter {
 class _ClassroomDetailsSheet extends StatelessWidget {
   final String roomName;
   final List<dynamic> sessions;
-  final DateTime selectedDate;
+  final String selectedDay;
 
   const _ClassroomDetailsSheet({
     required this.roomName,
     required this.sessions,
-    required this.selectedDate,
+    required this.selectedDay,
   });
 
   @override
   Widget build(BuildContext context) {
-    final dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    final dayName = dayNames[selectedDate.weekday % 7];
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
@@ -528,10 +544,7 @@ class _ClassroomDetailsSheet extends StatelessWidget {
                   color: const Color(0xFF4F46E5).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
-                  Icons.meeting_room,
-                  color: Color(0xFF4F46E5),
-                ),
+                child: const Icon(Icons.meeting_room, color: Color(0xFF4F46E5)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -546,7 +559,7 @@ class _ClassroomDetailsSheet extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$dayName - ${sessions.length} cours',
+                      '$selectedDay - ${sessions.length} cours',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -579,9 +592,7 @@ class _ClassroomDetailsSheet extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       'Aucun cours dans cette salle',
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                      ),
+                      style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
                 ),
@@ -638,10 +649,7 @@ class _ClassroomDetailsSheet extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             session['course'],
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Row(
@@ -650,20 +658,14 @@ class _ClassroomDetailsSheet extends StatelessWidget {
               const SizedBox(width: 4),
               Text(
                 session['professor'],
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
               const SizedBox(width: 16),
               Icon(Icons.class_, size: 14, color: Colors.grey.shade600),
               const SizedBox(width: 4),
               Text(
                 session['class'],
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
             ],
           ),

@@ -23,7 +23,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   bool _showMapView = false;
 
-  final List<String> _days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  final List<String> _days = [
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+  ];
 
   @override
   void initState() {
@@ -35,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final user = await AuthService.getUser();
       final schedule = await TimetableService.getStudentTimetable();
-      
+
       setState(() {
         _user = user;
         _schedule = schedule;
@@ -56,9 +63,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _logout() async {
     await AuthService.logout();
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
@@ -70,8 +77,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         body: const MapView(),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () => setState(() => _showMapView = false),
-          icon: const Icon(Icons.calendar_today),
-          label: const Text('Emploi'),
+          icon: const Icon(Icons.calendar_today, color: Colors.white),
+          label: const Text('Emploi', style: TextStyle(color: Colors.white)),
           backgroundColor: const Color(0xFF4F46E5),
         ),
       );
@@ -82,19 +89,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? _buildErrorView()
-              : IndexedStack(
-                  index: _selectedIndex,
-                  children: [
-                    _buildDayView(),
-                    _buildWeekView(),
-                    _buildProfileView(),
-                  ],
-                ),
+          ? _buildErrorView()
+          : IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildDayView(),
+                _buildWeekView(),
+                _buildProfileView(),
+              ],
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => setState(() => _showMapView = true),
-        icon: const Icon(Icons.map),
-        label: const Text('Carte'),
+        icon: const Icon(Icons.map, color: Colors.white),
+        label: const Text('Carte', style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF4F46E5),
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -113,10 +120,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.calendar_view_week),
             label: 'Semaine',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
     );
@@ -161,7 +165,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildDayView() {
     final sessions = _schedule[_currentDay] ?? [];
-    
+
     return RefreshIndicator(
       onRefresh: _loadData,
       child: CustomScrollView(
@@ -200,7 +204,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -260,12 +267,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return SessionCard(session: sessions[index]);
-                  },
-                  childCount: sessions.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return SessionCard(session: sessions[index]);
+                }, childCount: sessions.length),
               ),
             ),
         ],
@@ -311,72 +315,69 @@ class _DashboardScreenState extends State<DashboardScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final day = _days[index];
-                  final sessions = _schedule[day] ?? [];
-                  
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4F46E5).withOpacity(0.05),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                day,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                  color: Color(0xFF4F46E5),
-                                ),
-                              ),
-                              Text(
-                                '${sessions.length} cours',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final day = _days[index];
+                final sessions = _schedule[day] ?? [];
+
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5).withOpacity(0.05),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
                           ),
                         ),
-                        if (sessions.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'Aucun cours',
-                              style: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontStyle: FontStyle.italic,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              day,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: Color(0xFF4F46E5),
                               ),
                             ),
-                          )
-                        else
-                          ...sessions.map((session) => SessionCard(
-                            session: session,
-                            compact: true,
-                          )),
-                      ],
-                    ),
-                  );
-                },
-                childCount: _days.length,
-              ),
+                            Text(
+                              '${sessions.length} cours',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (sessions.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Aucun cours',
+                            style: TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        )
+                      else
+                        ...sessions.map(
+                          (session) =>
+                              SessionCard(session: session, compact: true),
+                        ),
+                    ],
+                  ),
+                );
+              }, childCount: _days.length),
             ),
           ),
         ],
@@ -508,10 +509,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Color(0xFF6B7280),
-          ),
+          style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
         ),
         Text(
           value,

@@ -2,27 +2,33 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/timetable_service.dart';
 import 'login_screen.dart';
+import 'map_view.dart';
 
 class SecurityDashboardScreen extends StatefulWidget {
   const SecurityDashboardScreen({super.key});
 
   @override
-  State<SecurityDashboardScreen> createState() => _SecurityDashboardScreenState();
+  State<SecurityDashboardScreen> createState() =>
+      _SecurityDashboardScreenState();
 }
 
 class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
   Map<String, List<SecuritySession>> _schedule = {};
   String _currentDay = 'Lundi';
   String _securityName = '';
-  List<dynamic> _classes = [];
-  List<dynamic> _rooms = [];
   bool _isLoading = true;
   String? _errorMessage;
   int _selectedIndex = 0;
-  int? _selectedClassId;
-  int? _selectedRoomId;
+  bool _showMapView = false;
 
-  final List<String> _days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+  final List<String> _days = [
+    'Lundi',
+    'Mardi',
+    'Mercredi',
+    'Jeudi',
+    'Vendredi',
+    'Samedi',
+  ];
 
   @override
   void initState() {
@@ -55,41 +61,51 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
   Future<void> _logout() async {
     await AuthService.logout();
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => const LoginScreen()));
     }
   }
 
   List<SecuritySession> _getFilteredSessions(String day) {
-    final sessions = _schedule[day] ?? [];
-    return sessions.where((session) {
-      if (_selectedClassId != null && session.classId != _selectedClassId) {
-        return false;
-      }
-      if (_selectedRoomId != null && session.roomId != _selectedRoomId) {
-        return false;
-      }
-      return true;
-    }).toList();
+    return _schedule[day] ?? [];
   }
 
   @override
   Widget build(BuildContext context) {
+    // If map view is active, show the MapView widget
+    if (_showMapView) {
+      return Scaffold(
+        body: const MapView(),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () => setState(() => _showMapView = false),
+          icon: const Icon(Icons.calendar_today, color: Colors.white),
+          label: const Text('Emploi', style: TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFF4F46E5),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _errorMessage != null
-              ? _buildErrorView()
-              : IndexedStack(
-                  index: _selectedIndex,
-                  children: [
-                    _buildDayView(),
-                    _buildWeekView(),
-                    _buildProfileView(),
-                  ],
-                ),
+          ? _buildErrorView()
+          : IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildDayView(),
+                _buildWeekView(),
+                _buildProfileView(),
+              ],
+            ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => setState(() => _showMapView = true),
+        icon: const Icon(Icons.map, color: Colors.white),
+        label: const Text('Carte', style: TextStyle(color: Colors.white)),
+        backgroundColor: const Color(0xFF4F46E5),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
@@ -106,10 +122,7 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
             icon: Icon(Icons.calendar_view_week),
             label: 'Semaine',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profil',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
       ),
     );
@@ -195,7 +208,10 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
               child: Column(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -236,7 +252,11 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.orange.shade700,
+                          size: 20,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -281,12 +301,9 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    return _buildSecuritySessionCard(sessions[index]);
-                  },
-                  childCount: sessions.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  return _buildSecuritySessionCard(sessions[index]);
+                }, childCount: sessions.length),
               ),
             ),
         ],
@@ -332,69 +349,69 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final day = _days[index];
-                  final sessions = _schedule[day] ?? [];
+              delegate: SliverChildBuilderDelegate((context, index) {
+                final day = _days[index];
+                final sessions = _schedule[day] ?? [];
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: const Color(0xFFE5E7EB)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4F46E5).withOpacity(0.05),
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(12),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                day,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16,
-                                  color: Color(0xFF4F46E5),
-                                ),
-                              ),
-                              Text(
-                                '${sessions.length} cours',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                            ],
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5).withOpacity(0.05),
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(12),
                           ),
                         ),
-                        if (sessions.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Text(
-                              'Aucun cours',
-                              style: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontStyle: FontStyle.italic,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              day,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: Color(0xFF4F46E5),
                               ),
                             ),
-                          )
-                        else
-                          ...sessions.map((session) => _buildSecuritySessionCard(session, compact: true)),
-                      ],
-                    ),
-                  );
-                },
-                childCount: _days.length,
-              ),
+                            Text(
+                              '${sessions.length} cours',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (sessions.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Aucun cours',
+                            style: TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        )
+                      else
+                        ...sessions.map(
+                          (session) =>
+                              _buildSecuritySessionCard(session, compact: true),
+                        ),
+                    ],
+                  ),
+                );
+              }, childCount: _days.length),
             ),
           ),
         ],
@@ -486,11 +503,23 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildResponsibilityItem(Icons.meeting_room, 'Ouvrir les salles', 'Selon les emplois du temps'),
+                      _buildResponsibilityItem(
+                        Icons.meeting_room,
+                        'Ouvrir les salles',
+                        'Selon les emplois du temps',
+                      ),
                       const Divider(height: 24),
-                      _buildResponsibilityItem(Icons.schedule, 'Horaires de cours', 'Consulter tous les emplois'),
+                      _buildResponsibilityItem(
+                        Icons.schedule,
+                        'Horaires de cours',
+                        'Consulter tous les emplois',
+                      ),
                       const Divider(height: 24),
-                      _buildResponsibilityItem(Icons.people, 'Gestion des accès', 'Contrôle des salles de classe'),
+                      _buildResponsibilityItem(
+                        Icons.people,
+                        'Gestion des accès',
+                        'Contrôle des salles de classe',
+                      ),
                     ],
                   ),
                 ),
@@ -520,7 +549,11 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
     );
   }
 
-  Widget _buildResponsibilityItem(IconData icon, String title, String description) {
+  Widget _buildResponsibilityItem(
+    IconData icon,
+    String title,
+    String description,
+  ) {
     return Row(
       children: [
         Container(
@@ -545,10 +578,7 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
               ),
               Text(
                 description,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.grey.shade600,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
               ),
             ],
           ),
@@ -557,9 +587,16 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
     );
   }
 
-  Widget _buildSecuritySessionCard(SecuritySession session, {bool compact = false}) {
+  Widget _buildSecuritySessionCard(
+    SecuritySession session, {
+    bool compact = false,
+  }) {
     return Card(
-      margin: EdgeInsets.only(bottom: compact ? 8 : 12, left: compact ? 12 : 0, right: compact ? 12 : 0),
+      margin: EdgeInsets.only(
+        bottom: compact ? 8 : 12,
+        left: compact ? 12 : 0,
+        right: compact ? 12 : 0,
+      ),
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -571,10 +608,7 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              const Color(0xFFF9FAFB),
-            ],
+            colors: [Colors.white, const Color(0xFFF9FAFB)],
           ),
         ),
         child: Padding(
@@ -585,7 +619,10 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF4F46E5).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
@@ -601,7 +638,10 @@ class _SecurityDashboardScreenState extends State<SecurityDashboardScreen> {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.orange.shade100,
                       borderRadius: BorderRadius.circular(12),
