@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/map_service.dart';
+import '../services/auth_service.dart';
 import '../widgets/weekly_day_switcher.dart';
 
 class MapView extends StatefulWidget {
@@ -15,6 +16,7 @@ class _MapViewState extends State<MapView> {
   List<dynamic> _entrances = [];
   Map<int, List<dynamic>> _sessionsByRoom = {};
   Set<int> _activeRoomIds = {};
+  String _userType = 'student';
 
   int _selectedDayIndex = 0; // 0 = Lundi, 5 = Samedi
   bool _isLoading = true;
@@ -42,6 +44,12 @@ class _MapViewState extends State<MapView> {
   Future<void> _loadMapData() async {
     try {
       setState(() => _isLoading = true);
+
+      // Get user type for tailored details
+      final user = await AuthService.getUser();
+      if (user != null) {
+        _userType = user.type;
+      }
 
       final layout = await MapService.getMapLayout();
       _classrooms = layout['classrooms'] ?? [];
@@ -84,6 +92,22 @@ class _MapViewState extends State<MapView> {
   void _onDayChanged(int newDayIndex) {
     setState(() => _selectedDayIndex = newDayIndex);
     _loadSessionsForDay(newDayIndex);
+  }
+
+  void _handleMapTap(Offset localPosition) {
+    // Calculate which cell was tapped
+    final int col = (localPosition.dx / _cellSize).floor();
+    final int row = (localPosition.dy / _cellSize).floor();
+
+    // Find if there's a classroom at this location
+    final classroom = _classrooms.firstWhere(
+      (c) => c['row'] == row && c['col'] == col,
+      orElse: () => null,
+    );
+
+    if (classroom != null) {
+      _onClassroomTap(classroom);
+    }
   }
 
   @override
@@ -206,24 +230,27 @@ class _MapViewState extends State<MapView> {
             scrollDirection: Axis.vertical,
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: CustomPaint(
-                size: const Size(
-                  _gridWidth * _cellSize,
-                  _gridHeight * _cellSize,
-                ),
-                painter: _MapGridPainter(
-                  classrooms: _classrooms,
-                  roads: _roads,
-                  entrances: _entrances,
-                  activeRoomIds: _activeRoomIds,
-                  sessionsByRoom: _sessionsByRoom,
-                  selectedDayIndex: _selectedDayIndex,
-                  entranceColor: _entranceColor,
-                  roadColor: _roadColor,
-                  classroomActive: _classroomActive,
-                  classroomInactive: _classroomInactive,
-                  greyDotColor: _greyDotColor,
-                  onClassroomTap: _onClassroomTap,
+              child: GestureDetector(
+                onTapUp: (details) => _handleMapTap(details.localPosition),
+                child: CustomPaint(
+                  size: const Size(
+                    _gridWidth * _cellSize,
+                    _gridHeight * _cellSize,
+                  ),
+                  painter: _MapGridPainter(
+                    classrooms: _classrooms,
+                    roads: _roads,
+                    entrances: _entrances,
+                    activeRoomIds: _activeRoomIds,
+                    sessionsByRoom: _sessionsByRoom,
+                    selectedDayIndex: _selectedDayIndex,
+                    entranceColor: _entranceColor,
+                    roadColor: _roadColor,
+                    classroomActive: _classroomActive,
+                    classroomInactive: _classroomInactive,
+                    greyDotColor: _greyDotColor,
+                    onClassroomTap: _onClassroomTap,
+                  ),
                 ),
               ),
             ),
@@ -240,10 +267,13 @@ class _MapViewState extends State<MapView> {
 
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => _ClassroomDetailsSheet(
         roomName: roomName,
         sessions: sessions,
         selectedDay: MapService.days[_selectedDayIndex],
+        userType: _userType,
       ),
     );
   }
@@ -343,7 +373,8 @@ class _MapGridPainter extends CustomPainter {
       ..color = roadColor
       ..style = PaintingStyle.fill;
 
-    final rect = Rect.fromLTWH(col * 40 + 5, row * 40 + 5, 30, 30);
+    // Fill the entire cell (40x40) to connect roads
+    final rect = Rect.fromLTWH(col * 40.0, row * 40.0, 40.0, 40.0);
 
     canvas.drawRect(rect, paint);
   }
@@ -503,11 +534,13 @@ class _ClassroomDetailsSheet extends StatelessWidget {
   final String roomName;
   final List<dynamic> sessions;
   final String selectedDay;
+  final String userType;
 
   const _ClassroomDetailsSheet({
     required this.roomName,
     required this.sessions,
     required this.selectedDay,
+    required this.userType,
   });
 
   @override
@@ -568,6 +601,10 @@ class _ClassroomDetailsSheet extends StatelessWidget {
                   ],
                 ),
               ),
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
+              ),
             ],
           ),
 
@@ -599,15 +636,16 @@ class _ClassroomDetailsSheet extends StatelessWidget {
               ),
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: sessions.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final session = sessions[index];
-                return _buildSessionCard(session);
-              },
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: sessions.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final session = sessions[index];
+                  return _buildSessionCard(session);
+                },
+              ),
             ),
 
           const SizedBox(height: 20),
@@ -647,27 +685,50 @@ class _ClassroomDetailsSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
+          
+          // Tailored Info based on User Type
+          if (userType == 'student') ...[
+            _infoRow(Icons.book_outlined, 'Cours:', session['course']),
+            _infoRow(Icons.person_outline, 'Prof:', session['professor']),
+          ] else if (userType == 'professor') ...[
+            _infoRow(Icons.book_outlined, 'Cours:', session['course']),
+            _infoRow(Icons.class_outlined, 'Classe:', session['class']),
+          ] else if (userType == 'security') ...[
+            _infoRow(Icons.person_outline, 'Prof:', session['professor']),
+            _infoRow(Icons.class_outlined, 'Classe:', session['class']),
+            _infoRow(Icons.book_outlined, 'Cours:', session['course']),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: Colors.grey.shade600),
+          const SizedBox(width: 6),
           Text(
-            session['course'],
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade700,
+            ),
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Icon(Icons.person_outline, size: 14, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                session['professor'],
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1F2937),
               ),
-              const SizedBox(width: 16),
-              Icon(Icons.class_, size: 14, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text(
-                session['class'],
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-              ),
-            ],
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),
