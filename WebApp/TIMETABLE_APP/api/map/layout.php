@@ -1,25 +1,25 @@
 <?php
 /**
- * CHRONOS API - Map Layout Endpoint
- * Returns the faculty map grid data
+ * API CHRONOS - Point de connexion de la disposition de la carte
+ * Retourne les données de la grille de la carte de la faculté
  * GET /api/map/layout.php
  */
 
-// Enable error reporting for debugging
+// Activer le rapport d'erreurs pour le débogage
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 require_once __DIR__ . '/../config.php';
 
-// Only accept GET requests
+// Accepter uniquement les requêtes GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(false, null, 'Method not allowed');
 }
 
-// Validate token (any authenticated user can view the map)
+// Valider le jeton (tout utilisateur authentifié peut voir la carte)
 $tokenData = getAuthUser($pdo);
 
-// Fetch map layout from database
+// Récupérer la disposition de la carte de la base de données
 $stmt = $pdo->prepare("SELECT grid_data FROM CARTE_LAYOUT WHERE id = 1");
 $stmt->execute();
 $row = $stmt->fetch();
@@ -27,11 +27,11 @@ $row = $stmt->fetch();
 if ($row && !empty($row['grid_data']) && $row['grid_data'] !== '{}') {
     $gridData = json_decode($row['grid_data'], true);
 } else {
-    // Return empty grid structure
+    // Retourner une structure de grille vide
     $gridData = [];
 }
 
-// Parse classrooms to extract room information
+// Analyser les salles de classe pour extraire les informations sur les salles
 $classrooms = [];
 $roads = [];
 $entrances = [];

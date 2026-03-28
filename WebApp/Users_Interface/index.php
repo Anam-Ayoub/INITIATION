@@ -3,7 +3,7 @@ session_start();
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../config/functions.php';
 
-// Redirect to dashboard if already logged in
+// Rediriger vers le tableau de bord si déjà connecté
 if (isset($_SESSION['STUDENT_ID'])) {
     header("Location: dashboard_student.php");
     exit;
@@ -12,7 +12,7 @@ if (isset($_SESSION['STUDENT_ID'])) {
 $error = '';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Basic CSRF verification
+    // Vérification basique du CSRF
     if (!isset($_POST['csrf_token']) || !verifyCsrfToken($_POST['csrf_token'])) {
         $error = "Session expirée ou jeton invalide. Veuillez réessayer.";
     } else {
@@ -22,13 +22,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (empty($email) || empty($password)) {
             $error = "Veuillez saisir votre email et mot de passe.";
         } else {
-            // First check if it's a student
+            // Vérifier d'abord si c'est un étudiant
             $stmt = $pdo->prepare("SELECT `ID_STUDENT`, `FULL_NAME`, `PASSWORD`, `ID_CLASSE` FROM `STUDENT` WHERE `EMAIL` = :email LIMIT 1");
             $stmt->execute(['email' => $email]);
             $student = $stmt->fetch();
 
             if ($student && password_verify($password, $student['PASSWORD'])) {
-                // Successful student login
+                // Connexion réussie de l'étudiant
                 $_SESSION['STUDENT_ID'] = $student['ID_STUDENT'];
                 $_SESSION['STUDENT_NAME'] = $student['FULL_NAME'];
                 $_SESSION['ID_CLASSE'] = $student['ID_CLASSE'];
@@ -36,26 +36,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 header("Location: dashboard_student.php");
                 exit;
             } else {
-                // If not a student, check if it's a professor
+                // Si ce n'est pas un étudiant, vérifier si c'est un professeur
                 $stmtProf = $pdo->prepare("SELECT `ID_PROF`, `NOM_PROF`, `PASSWORD` FROM `PROF` WHERE `EMAIL` = :email LIMIT 1");
                 $stmtProf->execute(['email' => $email]);
                 $prof = $stmtProf->fetch();
 
                 if ($prof && password_verify($password, $prof['PASSWORD'])) {
-                    // Successful professor login
+                    // Connexion réussie du professeur
                     $_SESSION['PROF_ID'] = $prof['ID_PROF'];
                     $_SESSION['PROF_NAME'] = $prof['NOM_PROF'];
                     session_regenerate_id(true);
                     header("Location: dashboard_prof.php");
                     exit;
                 } else {
-                    // If not a prof, check if it's a security guard
+                    // Si ce n'est pas un prof, vérifier si c'est un agent de sécurité
                     $stmtSec = $pdo->prepare("SELECT `ID_SEC`, `FULL_NAME`, `PASSWORD` FROM `SECURITY` WHERE `EMAIL` = :email LIMIT 1");
                     $stmtSec->execute(['email' => $email]);
                     $sec = $stmtSec->fetch();
 
                     if ($sec && password_verify($password, $sec['PASSWORD'])) {
-                        // Successful security login
+                        // Connexion réussie de l'agent de sécurité
                         $_SESSION['SEC_ID'] = $sec['ID_SEC'];
                         $_SESSION['SEC_NAME'] = $sec['FULL_NAME'];
                         session_regenerate_id(true);

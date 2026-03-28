@@ -13,7 +13,7 @@ if (!isset($_SESSION['SEC_ID'])) {
 $secName = $_SESSION['SEC_NAME'];
 $idSec = $_SESSION['SEC_ID'];
 
-// Fetch all schedules for security (rooms to be opened)
+// Récupérer tous les emplois du temps pour la sécurité (salles à ouvrir)
 $sql = "
     SELECT 
         e.ID_EMPLOI,
@@ -35,7 +35,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute();
 $results = $stmt->fetchAll();
 
-// Organize data by day
+// Organiser les données par jour
 $scheduleByDay = [
     'Lundi' => [],
     'Mardi' => [],
@@ -51,7 +51,7 @@ foreach ($results as $row) {
     }
 }
 
-// Time slots for week view
+// Créneaux horaires pour la vue hebdomadaire
 $timeSlots = [
     '08:30:00 - 10:30:00',
     '10:30:00 - 12:30:00',
@@ -59,12 +59,12 @@ $timeSlots = [
     '16:30:00 - 18:30:00'
 ];
 
-// Helper to format time strings from DB
+// Aide pour formater les chaînes de temps de la base de données
 function formatTime($timeStr) {
     return date('H:i', strtotime($timeStr));
 }
 
-// Map current PHP day to French day
+// Faire correspondre le jour actuel de PHP au jour en français
 $englishToFrenchDay = [
     'Monday' => 'Lundi',
     'Tuesday' => 'Mardi',
@@ -76,7 +76,7 @@ $englishToFrenchDay = [
 ];
 $currentDayEnglish = date('l');
 $currentDayFrench = $englishToFrenchDay[$currentDayEnglish] ?? 'Lundi';
-if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to Monday if Sunday
+if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Par défaut à Lundi si c'est Dimanche
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -160,7 +160,7 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
                 </div>
             </div>
 
-            <!-- Day View Area -->
+            <!-- Zone de vue par jour -->
             <div id="view-day" class="day-view active-view glass-panel" style="padding: 2rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <h3>Salles à ouvrir / sécuriser : <?php echo htmlspecialchars($currentDayFrench); ?></h3>
@@ -183,7 +183,7 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
                             <?php foreach ($sessions as $session): ?>
                                 <div class="schedule-card" style="background: white; border-left-color: #F59E0B;">
                                     <?php
-                                        // Simple logic to show active or upcoming vs finished for today
+                                        // Logique simple pour afficher l'activité en cours, à venir ou terminée pour aujourd'hui
                                         $status = "À venir";
                                         $badgeClass = "badge-warning";
                                         if ($day === $currentDayFrench) {
@@ -224,7 +224,7 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
                 <?php endforeach; ?>
             </div>
 
-            <!-- Week View Area -->
+            <!-- Zone de vue hebdomadaire -->
             <div id="view-week" class="week-view glass-panel" style="padding: 2rem;">
                 <p style="color: var(--text-muted); margin-bottom: 1rem;">Liste chronologique complète de l'activité du campus pour la semaine (pour archivage sécurité).</p>
                 <div class="timetable-container" style="max-height: 600px; overflow-y: auto;">
@@ -240,7 +240,7 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
                         </thead>
                         <tbody>
                             <?php 
-                            $weekResults = $results; // already sorted by Day, then Salle, then Hour
+                            $weekResults = $results; // déjà trié par jour, puis par salle, puis par heure
                             if (empty($weekResults)): 
                             ?>
                                 <tr><td colspan="5" style="text-align:center; padding: 2rem;">Aucun emploi du temps trouvé pour cette semaine.</td></tr>
@@ -271,12 +271,12 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
 
     <script>
         function switchView(view) {
-            // Update buttons
+            // Mettre à jour les boutons
             document.getElementById('btn-day').classList.remove('active');
             document.getElementById('btn-week').classList.remove('active');
             document.getElementById('btn-' + view).classList.add('active');
 
-            // Update views
+            // Mettre à jour les vues
             document.getElementById('view-day').classList.remove('active-view');
             document.getElementById('view-week').classList.remove('active-view');
             document.getElementById('view-' + view).classList.add('active-view');

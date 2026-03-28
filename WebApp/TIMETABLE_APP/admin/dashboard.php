@@ -6,10 +6,10 @@ if(!isset($_SESSION['admin'])){
 }
 include __DIR__ . "/../../config/db.php";
 
-$total_seances  = $conn->query("SELECT COUNT(*) as c FROM EMPLOI_DU_TEMPS")->fetch_assoc()['c'];
-$total_classes  = $conn->query("SELECT COUNT(*) as c FROM CLASSE")->fetch_assoc()['c'];
-$total_profs    = $conn->query("SELECT COUNT(*) as c FROM PROF")->fetch_assoc()['c'];
-$total_salles   = $conn->query("SELECT COUNT(*) as c FROM SALLE")->fetch_assoc()['c'];
+$total_seances  = $pdo->query("SELECT COUNT(*) as c FROM EMPLOI_DU_TEMPS")->fetch()['c'];
+$total_classes  = $pdo->query("SELECT COUNT(*) as c FROM CLASSE")->fetch()['c'];
+$total_profs    = $pdo->query("SELECT COUNT(*) as c FROM PROF")->fetch()['c'];
+$total_salles   = $pdo->query("SELECT COUNT(*) as c FROM SALLE")->fetch()['c'];
 ?>
 <!DOCTYPE html>
 <html lang="fr">

@@ -18,7 +18,7 @@ if (!isset($_SESSION['admin'])) {
             display: flex;
             flex-direction: column;
             gap: 20px;
-            height: calc(100vh - 120px); /* Fill remaining space */
+            height: calc(100vh - 120px); /* Remplir l'espace restant */
         }
         
         .toolbar {

@@ -2,9 +2,9 @@
 session_start();
 include __DIR__ . "/../../config/db.php";
 
-$profs_res = $conn->query("SELECT * FROM PROF ORDER BY NOM_PROF");
+$profs_res = $pdo->query("SELECT * FROM PROF ORDER BY NOM_PROF")->fetchAll();
 $id_prof = $_GET['id_prof'] ?? null;
-$emplois = null;
+$emplois = [];
 
 if ($id_prof) {
     $sql = "SELECT e.*, c.NUMERO as NOM_CLASSE, co.NOM_COURS, s.NOM_SALLE,
@@ -14,10 +14,9 @@ if ($id_prof) {
             LEFT JOIN SALLE s ON e.ID_SALLE = s.ID_SALLE
             WHERE e.ID_PROF = ?
             ORDER BY FIELD(e.JOUR, 'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'), e.HEURE_DEB";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_prof);
-    $stmt->execute();
-    $emplois = $stmt->get_result();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$id_prof]);
+    $emplois = $stmt->fetchAll();
 }
 ?>
 <!DOCTYPE html>
@@ -55,19 +54,19 @@ if ($id_prof) {
                 <label><strong>Professeur :</strong></label>
                 <select name="id_prof" onchange="this.form.submit()" style="margin-left:10px;">
                     <option value="">— Sélectionner —</option>
-                    <?php while($p = $profs_res->fetch_assoc()): ?>
+                    <?php foreach($profs_res as $p): ?>
                         <option value="<?= $p['ID_PROF'] ?>" <?= $id_prof == $p['ID_PROF'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($p['NOM_PROF']) ?>
                         </option>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </select>
             </form>
         </div>
 
-        <?php if ($id_prof && $emplois && $emplois->num_rows > 0): ?>
+        <?php if ($id_prof && !empty($emplois)): ?>
             <?php
             $grouped = [];
-            while($row = $emplois->fetch_assoc()) { $grouped[$row['JOUR']][] = $row; }
+            foreach($emplois as $row) { $grouped[$row['JOUR']][] = $row; }
             ?>
             <?php foreach($grouped as $day => $sessions): ?>
                 <div class="day-group">

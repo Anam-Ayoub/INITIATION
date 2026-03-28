@@ -13,13 +13,13 @@ $sql = "SELECT e.JOUR, TIME_FORMAT(e.HEURE_DEB, '%H:%i') as hd, TIME_FORMAT(e.HE
 if ($jour_filtre !== 'all') { $sql .= " WHERE e.JOUR = ?"; }
 $sql .= " ORDER BY FIELD(e.JOUR, 'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'), e.HEURE_DEB";
 
-$stmt = $conn->prepare($sql);
-if ($jour_filtre !== 'all') { $stmt->bind_param("s", $jour_filtre); }
-$stmt->execute();
-$emplois = $stmt->get_result();
+$stmt = $pdo->prepare($sql);
+if ($jour_filtre !== 'all') { $stmt->execute([$jour_filtre]); }
+else { $stmt->execute(); }
+$emplois = $stmt->fetchAll();
 
 $grouped = [];
-while($row = $emplois->fetch_assoc()) { $grouped[$row['JOUR']][] = $row; }
+foreach($emplois as $row) { $grouped[$row['JOUR']][] = $row; }
 ?>
 <!DOCTYPE html>
 <html lang="fr">

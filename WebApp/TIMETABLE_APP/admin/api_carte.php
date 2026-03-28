@@ -4,43 +4,44 @@ include __DIR__ . "/../../config/db.php";
 
 header('Content-Type: application/json');
 
-// Check if user is logged in
+// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['admin'])) {
     echo json_encode(['success' => false, 'error' => 'Non autorisé']);
     exit();
 }
 
-// Get the requested action
+// Obtenir l'action demandée
 $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 switch ($action) {
     case 'get_map':
         $sql = "SELECT grid_data FROM CARTE_LAYOUT WHERE id = 1";
-        $result = $conn->query($sql);
+        $stmt = $pdo->query($sql);
         
-        if ($result && $row = $result->fetch_assoc()) {
+        if ($stmt && $row = $stmt->fetch()) {
             echo json_encode(['success' => true, 'data' => $row['grid_data']]);
         } else {
-            // Return empty grid if none exists
+            // Retourner une grille vide si aucune n'existe
             echo json_encode(['success' => true, 'data' => '{}']);
         }
         break;
 
     case 'save_map':
-        // Get JSON payload
+        // Obtenir le flux JSON
         $json = file_get_contents('php://input');
         $data = json_decode($json, true);
         
         if (isset($data['grid_data'])) {
-            $gridData = $conn->real_escape_string($data['grid_data']);
+            $gridData = $data['grid_data'];
             
-            // Upsert the layout
-            $sql = "INSERT INTO CARTE_LAYOUT (id, grid_data) VALUES (1, '$gridData') ON DUPLICATE KEY UPDATE grid_data = '$gridData'";
+            // Upsert du layout
+            $sql = "INSERT INTO CARTE_LAYOUT (id, grid_data) VALUES (1, ?) ON DUPLICATE KEY UPDATE grid_data = ?";
+            $stmt = $pdo->prepare($sql);
             
-            if ($conn->query($sql)) {
+            if ($stmt->execute([$gridData, $gridData])) {
                 echo json_encode(['success' => true, 'message' => 'Carte sauvegardée avec succès']);
             } else {
-                echo json_encode(['success' => false, 'error' => 'Erreur lors de la sauvegarde: ' . $conn->error]);
+                echo json_encode(['success' => false, 'error' => 'Erreur lors de la sauvegarde']);
             }
         } else {
             echo json_encode(['success' => false, 'error' => 'Données de la grille manquantes']);
@@ -52,19 +53,19 @@ switch ($action) {
         $data = json_decode($json, true);
         
         if (isset($data['nom'])) {
-            $nom = $conn->real_escape_string($data['nom']);
+            $nom = $data['nom'];
             
-            // Check if room already exists
-            $check = $conn->query("SELECT ID_SALLE FROM SALLE WHERE NOM_SALLE = '$nom'");
-            if ($check && $check->num_rows > 0) {
-                // Return existing ID
-                $row = $check->fetch_assoc();
+            // Vérifier si la salle existe déjà
+            $stmt = $pdo->prepare("SELECT ID_SALLE FROM SALLE WHERE NOM_SALLE = ?");
+            $stmt->execute([$nom]);
+            if ($row = $stmt->fetch()) {
+                // Retourner l'ID existant
                 echo json_encode(['success' => true, 'id_salle' => $row['ID_SALLE'], 'message' => 'Salle déjà existante']);
             } else {
-                // Insert new room
-                $sql = "INSERT INTO SALLE (NOM_SALLE, CAPACITE) VALUES ('$nom', 0)";
-                if ($conn->query($sql)) {
-                    $newId = $conn->insert_id;
+                // Insérer la nouvelle salle
+                $stmt = $pdo->prepare("INSERT INTO SALLE (NOM_SALLE, CAPACITE) VALUES (?, 0)");
+                if ($stmt->execute([$nom])) {
+                    $newId = $pdo->lastInsertId();
                     echo json_encode(['success' => true, 'id_salle' => $newId, 'message' => 'Salle ajoutée']);
                 } else {
                     echo json_encode(['success' => false, 'error' => 'Erreur lors de l\'ajout de la salle']);
@@ -80,13 +81,11 @@ switch ($action) {
         $data = json_decode($json, true);
         
         if (isset($data['nom'])) {
-            $nom = $conn->real_escape_string($data['nom']);
+            $nom = $data['nom'];
             
-            // Only delete if it's not being used in the timetable
-            // Wait, standard behavior usually allows deleting if cascading, but let's be safe
-            // Let's just delete the room from the `SALLE` table by name.
-            $sql = "DELETE FROM SALLE WHERE NOM_SALLE = '$nom'";
-            if ($conn->query($sql)) {
+            // Supprimer la salle par son nom
+            $stmt = $pdo->prepare("DELETE FROM SALLE WHERE NOM_SALLE = ?");
+            if ($stmt->execute([$nom])) {
                 echo json_encode(['success' => true, 'message' => 'Salle supprimée']);
             } else {
                 echo json_encode(['success' => false, 'error' => 'Erreur lors de la suppression (peut-être utilisée dans un emploi)']);

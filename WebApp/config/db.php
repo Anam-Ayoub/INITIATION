@@ -1,8 +1,8 @@
 <?php
-$host = "localhost";
+$host = "mysql-chronos.alwaysdata.net";
 $dbname = "chronos_db";
-$username = "root"; // Nom d'utilisateur par défaut XAMPP/WAMP
-$password = ""; // Mot de passe par défaut XAMPP/WAMP
+$username = "chronos"; // Nom d'utilisateur par défaut XAMPP/WAMP
+$password = "siia12345678"; // Mot de passe par défaut XAMPP/WAMP
 
 // =====================================================================
 // Connexion PDO (Pour les nouvelles interfaces Utilisateur: Étudiant, Prof, Sécurité)

@@ -7,13 +7,13 @@ requireLogin();
 $studentName = $_SESSION['STUDENT_NAME'];
 $idClasse = $_SESSION['ID_CLASSE'];
 
-// Fetch the class name
+// Récupérer le nom de la classe
 $stmtClass = $pdo->prepare("SELECT NUMERO FROM CLASSE WHERE ID_CLASSE = :id");
 $stmtClass->execute(['id' => $idClasse]);
 $classe = $stmtClass->fetch();
 $className = $classe ? $classe['NUMERO'] : 'Unknown Class';
 
-// Fetch schedule for this class
+// Récupérer l'emploi du temps pour cette classe
 $sql = "
     SELECT 
         e.ID_EMPLOI,
@@ -34,7 +34,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute(['id_classe' => $idClasse]);
 $results = $stmt->fetchAll();
 
-// Organize data by day for easy rendering
+// Organiser les données par jour pour un rendu facile
 $scheduleByDay = [
     'Lundi' => [],
     'Mardi' => [],
@@ -50,7 +50,7 @@ foreach ($results as $row) {
     }
 }
 
-// Time slots for week view
+// Créneaux horaires pour la vue hebdomadaire
 $timeSlots = [
     '08:30:00 - 10:30:00',
     '10:30:00 - 12:30:00',
@@ -58,12 +58,12 @@ $timeSlots = [
     '16:30:00 - 18:30:00'
 ];
 
-// Helper to format time strings from DB
+// Aide pour formater les chaînes de temps de la base de données
 function formatTime($timeStr) {
     return date('H:i', strtotime($timeStr));
 }
 
-// Helper to check if a session fits a time slot roughly
+// Aide pour vérifier si une session correspond à peu près à un créneau horaire
 function getSessionForSlot($sessions, $slotIndex) {
     $slotStarts = ['08:30:00', '10:30:00', '14:30:00', '16:30:00'];
     $slotEnds = ['10:30:00', '12:30:00', '16:30:00', '18:30:00'];
@@ -79,7 +79,7 @@ function getSessionForSlot($sessions, $slotIndex) {
     return null;
 }
 
-// Map current PHP day to French day
+// Faire correspondre le jour actuel de PHP au jour en français
 $englishToFrenchDay = [
     'Monday' => 'Lundi',
     'Tuesday' => 'Mardi',
@@ -91,7 +91,7 @@ $englishToFrenchDay = [
 ];
 $currentDayEnglish = date('l');
 $currentDayFrench = $englishToFrenchDay[$currentDayEnglish] ?? 'Lundi';
-if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to Monday if Sunday
+if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Par défaut à Lundi si c'est Dimanche
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -143,7 +143,7 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
                 </div>
             </div>
 
-            <!-- Day View Area -->
+            <!-- Zone de vue par jour -->
             <div id="view-day" class="day-view active-view glass-panel" style="padding: 2rem;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <h3><?php echo htmlspecialchars($currentDayFrench); ?></h3>
@@ -184,7 +184,7 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
                 <?php endforeach; ?>
             </div>
 
-            <!-- Week View Area -->
+            <!-- Zone de vue hebdomadaire -->
             <div id="view-week" class="week-view glass-panel" style="padding: 2rem;">
                 <div class="timetable-container">
                     <table class="timetable-grid">
@@ -237,12 +237,12 @@ if ($currentDayFrench === 'Dimanche') $currentDayFrench = 'Lundi'; // Default to
 
     <script>
         function switchView(view) {
-            // Update buttons
+            // Mettre à jour les boutons
             document.getElementById('btn-day').classList.remove('active');
             document.getElementById('btn-week').classList.remove('active');
             document.getElementById('btn-' + view).classList.add('active');
 
-            // Update views
+            // Mettre à jour les vues
             document.getElementById('view-day').classList.remove('active-view');
             document.getElementById('view-week').classList.remove('active-view');
             document.getElementById('view-' + view).classList.add('active-view');

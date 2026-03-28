@@ -1,34 +1,34 @@
 <?php
 /**
- * CHRONOS API - Sessions by Date Endpoint
- * Returns sessions for a specific date (used for map room coloring)
+ * API CHRONOS - Point de connexion des sessions par date
+ * Retourne les sessions pour une date spécifique (utilisé pour la coloration des salles sur la carte)
  * GET /api/map/sessions_by_date.php?date=2026-03-16
  */
 
 require_once __DIR__ . '/../config.php';
 
-// Only accept GET requests
+// Accepter uniquement les requêtes GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(false, null, 'Method not allowed');
 }
 
-// Validate token (any authenticated user can view sessions)
+// Valider le jeton (tout utilisateur authentifié peut voir les sessions)
 $tokenData = getAuthUser($pdo);
 
-// Get date parameter (default to today)
+// Obtenir le paramètre de date (par défaut aujourd'hui)
 $date = isset($_GET['date']) ? $_GET['date'] : date('Y-m-d');
 
-// Validate date format
+// Valider le format de la date
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
     jsonResponse(false, null, 'Invalid date format. Use YYYY-MM-DD');
 }
 
-// Convert date to day name in French
+// Convertir la date en nom de jour en français
 $timestamp = strtotime($date);
 $dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 $dayName = $dayNames[date('w', $timestamp)];
 
-// Fetch all sessions for this day across all classes
+// Récupérer toutes les sessions de cette journée dans toutes les classes
 $sql = "
     SELECT 
         e.ID_EMPLOI,
@@ -54,7 +54,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute(['jour' => $dayName]);
 $sessions = $stmt->fetchAll();
 
-// Group sessions by room_id for quick lookup
+// Grouper les sessions par ID de salle pour une recherche rapide
 $sessionsByRoom = [];
 foreach ($sessions as $session) {
     $roomId = (int)$session['ID_SALLE'];
@@ -73,7 +73,7 @@ foreach ($sessions as $session) {
     ];
 }
 
-// Get list of all rooms that have sessions today
+// Obtenir la liste de toutes les salles qui ont des sessions aujourd'hui
 $activeRoomIds = array_keys($sessionsByRoom);
 
 jsonResponse(true, [

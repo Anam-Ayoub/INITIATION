@@ -1,28 +1,28 @@
 <?php
 /**
- * CHRONOS API - Professor Timetable Endpoint
- * Returns the timetable for the authenticated professor
+ * API CHRONOS - Point de connexion de l'emploi du temps des professeurs
+ * Retourne l'emploi du temps du professeur authentifié
  * GET /api/prof/timetable.php
  */
 
 require_once __DIR__ . '/../config.php';
 
-// Only accept GET requests
+// Accepter uniquement les requêtes GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(false, null, 'Method not allowed');
 }
 
-// Validate token and get user
+// Valider le jeton et obtenir l'utilisateur
 $tokenData = getAuthUser($pdo);
 
-// Verify the user is a professor
+// Vérifier que l'utilisateur est un professeur
 if ($tokenData['user_type'] !== 'professor') {
     jsonResponse(false, null, 'Access denied. Professors only.');
 }
 
 $profId = $tokenData['user_id'];
 
-// Fetch professor's name
+// Récupérer le nom du professeur
 $stmt = $pdo->prepare("SELECT NOM_PROF FROM PROF WHERE ID_PROF = :id");
 $stmt->execute(['id' => $profId]);
 $prof = $stmt->fetch();
@@ -31,7 +31,7 @@ if (!$prof) {
     jsonResponse(false, null, 'Professor not found');
 }
 
-// Fetch timetable for the professor
+// Récupérer l'emploi du temps pour le professeur
 $sql = "
     SELECT 
         e.ID_EMPLOI,
@@ -53,7 +53,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute(['prof_id' => $profId]);
 $sessions = $stmt->fetchAll();
 
-// Organize by day
+// Organiser par jour
 $days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 $scheduleByDay = [];
 

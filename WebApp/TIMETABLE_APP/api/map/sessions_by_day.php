@@ -1,30 +1,30 @@
 <?php
 /**
- * CHRONOS API - Sessions by Day Endpoint
- * Returns sessions for a specific day of the week (Lundi-Samedi)
+ * API CHRONOS - Point de connexion des sessions par jour
+ * Retourne les sessions pour un jour spécifique de la semaine (Lundi-Samedi)
  * GET /api/map/sessions_by_day.php?day=Lundi
  */
 
 require_once __DIR__ . '/../config.php';
 
-// Only accept GET requests
+// Accepter uniquement les requêtes GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(false, null, 'Method not allowed');
 }
 
-// Validate token (any authenticated user can view sessions)
+// Valider le jeton (tout utilisateur authentifié peut voir les sessions)
 $tokenData = getAuthUser($pdo);
 
-// Get day parameter
+// Obtenir le paramètre du jour
 $day = isset($_GET['day']) ? $_GET['day'] : 'Lundi';
 
-// Validate day name
+// Valider le nom du jour
 $validDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 if (!in_array($day, $validDays)) {
     jsonResponse(false, null, 'Invalid day. Must be one of: ' . implode(', ', $validDays));
 }
 
-// Build role-specific query based on the authenticated user's type
+// Construire une requête spécifique au rôle basée sur le type d'utilisateur authentifié
 $userType = $tokenData['user_type'];
 $userId = (int)$tokenData['user_id'];
 
@@ -51,20 +51,20 @@ $params = ['jour' => $day];
 
 switch ($userType) {
     case 'student':
-        // Students see only rooms where their class has sessions
+        // Les étudiants ne voient que les salles où leur classe a des sessions
         $baseSql .= " WHERE e.JOUR = :jour AND e.ID_CLASSE = (SELECT ID_CLASSE FROM STUDENT WHERE ID_STUDENT = :user_id)";
         $params['user_id'] = $userId;
         break;
 
     case 'professor':
-        // Professors see only rooms where they teach
+        // Les professeurs ne voient que les salles où ils enseignent
         $baseSql .= " WHERE e.JOUR = :jour AND e.ID_PROF = :user_id";
         $params['user_id'] = $userId;
         break;
 
     case 'security':
     default:
-        // Security sees all rooms that are in use
+        // La sécurité voit toutes les salles utilisées
         $baseSql .= " WHERE e.JOUR = :jour";
         break;
 }
@@ -75,7 +75,7 @@ $stmt = $pdo->prepare($baseSql);
 $stmt->execute($params);
 $sessions = $stmt->fetchAll();
 
-// Group sessions by room_id for quick lookup
+// Grouper les sessions par ID de salle pour une recherche rapide
 $sessionsByRoom = [];
 foreach ($sessions as $session) {
     $roomId = (int)$session['ID_SALLE'];
@@ -94,7 +94,7 @@ foreach ($sessions as $session) {
     ];
 }
 
-// Get list of all rooms that have sessions this day
+// Obtenir la liste de toutes les salles qui ont des sessions ce jour
 $activeRoomIds = array_keys($sessionsByRoom);
 
 jsonResponse(true, [

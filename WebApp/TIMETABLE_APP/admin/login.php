@@ -7,12 +7,10 @@ if (isset($_POST['login'])) {
     $password = $_POST['password'];
 
     $sql = "SELECT * FROM ADMIN WHERE USERNAME = ?";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$username]);
 
-    if ($row = $result->fetch_assoc()) {
+    if ($row = $stmt->fetch()) {
         if (password_verify($password, $row['PASSWORD'])) {
             session_regenerate_id(true);
             $_SESSION['admin'] = $row['USERNAME'];

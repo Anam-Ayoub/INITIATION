@@ -1,28 +1,28 @@
 <?php
 /**
- * CHRONOS API - Student Timetable Endpoint
- * Returns the timetable for the authenticated student's class
+ * API CHRONOS - Point de connexion de l'emploi du temps des étudiants
+ * Retourne l'emploi du temps pour la classe de l'étudiant authentifié
  * GET /api/student/timetable.php
  */
 
 require_once __DIR__ . '/../config.php';
 
-// Only accept GET requests
+// Accepter uniquement les requêtes GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(false, null, 'Method not allowed');
 }
 
-// Validate token and get user
+// Valider le jeton et obtenir l'utilisateur
 $tokenData = getAuthUser($pdo);
 
-// Verify the user is a student
+// Vérifier que l'utilisateur est un étudiant
 if ($tokenData['user_type'] !== 'student') {
     jsonResponse(false, null, 'Access denied. Students only.');
 }
 
 $studentId = $tokenData['user_id'];
 
-// Get student's class ID
+// Récupérer l'ID de la classe de l'étudiant
 $stmt = $pdo->prepare("SELECT ID_CLASSE FROM STUDENT WHERE ID_STUDENT = :id");
 $stmt->execute(['id' => $studentId]);
 $student = $stmt->fetch();
@@ -33,7 +33,7 @@ if (!$student || !$student['ID_CLASSE']) {
 
 $classId = $student['ID_CLASSE'];
 
-// Fetch timetable for the class
+// Récupérer l'emploi du temps pour la classe
 $sql = "
     SELECT 
         e.ID_EMPLOI,
@@ -55,7 +55,7 @@ $stmt = $pdo->prepare($sql);
 $stmt->execute(['class_id' => $classId]);
 $sessions = $stmt->fetchAll();
 
-// Organize by day
+// Organiser par jour
 $days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 $scheduleByDay = [];
 

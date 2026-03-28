@@ -2,9 +2,9 @@
 session_start();
 include __DIR__ . "/../../config/db.php";
 
-$classes_res = $conn->query("SELECT * FROM CLASSE ORDER BY NUMERO");
+$classes_res = $pdo->query("SELECT * FROM CLASSE ORDER BY NUMERO")->fetchAll();
 $id_classe = $_GET['id_classe'] ?? null;
-$emplois = null;
+$emplois = [];
 
 if ($id_classe) {
     $sql = "SELECT e.*, p.NOM_PROF, co.NOM_COURS, s.NOM_SALLE,
@@ -14,10 +14,9 @@ if ($id_classe) {
             LEFT JOIN SALLE s ON e.ID_SALLE = s.ID_SALLE
             WHERE e.ID_CLASSE = ?
             ORDER BY FIELD(e.JOUR, 'Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'), e.HEURE_DEB";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $id_classe);
-    $stmt->execute();
-    $emplois = $stmt->get_result();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$id_classe]);
+    $emplois = $stmt->fetchAll();
 }
 ?>
 <!DOCTYPE html>
@@ -55,19 +54,19 @@ if ($id_classe) {
                 <label><strong>Classe :</strong></label>
                 <select name="id_classe" onchange="this.form.submit()" style="margin-left:10px;">
                     <option value="">— Sélectionner —</option>
-                    <?php while($c = $classes_res->fetch_assoc()): ?>
+                    <?php foreach($classes_res as $c): ?>
                         <option value="<?= $c['ID_CLASSE'] ?>" <?= $id_classe == $c['ID_CLASSE'] ? 'selected' : '' ?>>
                             <?= htmlspecialchars($c['NUMERO']) ?>
                         </option>
-                    <?php endwhile; ?>
+                    <?php endforeach; ?>
                 </select>
             </form>
         </div>
 
-        <?php if ($id_classe && $emplois && $emplois->num_rows > 0): ?>
+        <?php if ($id_classe && !empty($emplois)): ?>
             <?php
             $grouped = [];
-            while($row = $emplois->fetch_assoc()) { $grouped[$row['JOUR']][] = $row; }
+            foreach($emplois as $row) { $grouped[$row['JOUR']][] = $row; }
             ?>
             <?php foreach($grouped as $day => $sessions): ?>
                 <div class="day-group">

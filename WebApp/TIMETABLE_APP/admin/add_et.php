@@ -11,31 +11,35 @@ if (isset($_POST['add'])) {
         $status = "error"; $msg_text = "Erreur de sécurité (jeton CSRF invalide).";
     } else {
         $jour = $_POST['jour']; $hd = $_POST['heure_debut']; $hf = $_POST['heure_fin'];
-        $id_classe = !empty($_POST['new_classe']) ? getOrCreateId($conn, 'CLASSE', 'NUMERO', 'ID_CLASSE', $_POST['new_classe']) : $_POST['id_classe'];
-        $id_prof   = !empty($_POST['new_prof'])   ? getOrCreateId($conn, 'PROF', 'NOM_PROF', 'ID_PROF', $_POST['new_prof']) : $_POST['id_prof'];
+        $id_classe = !empty($_POST['new_classe']) ? getOrCreateId($pdo, 'CLASSE', 'NUMERO', 'ID_CLASSE', $_POST['new_classe']) : $_POST['id_classe'];
+        $id_prof   = !empty($_POST['new_prof'])   ? getOrCreateId($pdo, 'PROF', 'NOM_PROF', 'ID_PROF', $_POST['new_prof']) : $_POST['id_prof'];
         $id_salle  = !empty($_POST['id_salle'])   ? $_POST['id_salle'] : null;
-        $id_cours  = !empty($_POST['new_cours'])  ? getOrCreateId($conn, 'COURS', 'NOM_COURS', 'ID_COURS', $_POST['new_cours']) : $_POST['id_cours'];
+        $id_cours  = !empty($_POST['new_cours'])  ? getOrCreateId($pdo, 'COURS', 'NOM_COURS', 'ID_COURS', $_POST['new_cours']) : $_POST['id_cours'];
 
         $conflits = [];
-        if (existeConflit($conn, $jour, $hd, $hf, 'ID_CLASSE', $id_classe)) { $conflits[] = "Classe occupée"; }
-        if (existeConflit($conn, $jour, $hd, $hf, 'ID_PROF', $id_prof))     { $conflits[] = "Professeur occupé"; }
-        if (existeConflit($conn, $jour, $hd, $hf, 'ID_SALLE', $id_salle))   { $conflits[] = "Salle occupée"; }
+        if (existeConflit($pdo, $jour, $hd, $hf, 'ID_CLASSE', $id_classe)) { $conflits[] = "Classe occupée"; }
+        if (existeConflit($pdo, $jour, $hd, $hf, 'ID_PROF', $id_prof))     { $conflits[] = "Professeur occupé"; }
+        if (existeConflit($pdo, $jour, $hd, $hf, 'ID_SALLE', $id_salle))   { $conflits[] = "Salle occupée"; }
 
         if (!empty($conflits)) {
             $status = "error"; $msg_text = "Conflit : " . implode(", ", $conflits);
         } else {
-            $st = $conn->prepare("INSERT INTO EMPLOI_DU_TEMPS (JOUR, HEURE_DEB, HEURE_FIN, ID_CLASSE, ID_PROF, ID_SALLE, ID_COURS) VALUES (?, ?, ?, ?, ?, ?, ?)");
-            $st->bind_param("sssiiii", $jour, $hd, $hf, $id_classe, $id_prof, $id_salle, $id_cours);
-            if ($st->execute()) { $status = "success"; $msg_text = "Séance enregistrée avec succès !"; }
-            else { $status = "error"; $msg_text = "Erreur : " . $conn->error; }
+            try {
+                $st = $pdo->prepare("INSERT INTO EMPLOI_DU_TEMPS (JOUR, HEURE_DEB, HEURE_FIN, ID_CLASSE, ID_PROF, ID_SALLE, ID_COURS) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                if ($st->execute([$jour, $hd, $hf, $id_classe, $id_prof, $id_salle, $id_cours])) { 
+                    $status = "success"; $msg_text = "Séance enregistrée avec succès !"; 
+                }
+            } catch (PDOException $e) {
+                $status = "error"; $msg_text = "Erreur : " . $e->getMessage();
+            }
         }
     }
 }
 
-$classes   = $conn->query("SELECT ID_CLASSE, NUMERO FROM CLASSE ORDER BY NUMERO");
-$profs     = $conn->query("SELECT ID_PROF, NOM_PROF FROM PROF ORDER BY NOM_PROF");
-$salles    = $conn->query("SELECT ID_SALLE, NOM_SALLE FROM SALLE ORDER BY NOM_SALLE");
-$coursList = $conn->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_COURS");
+$classes   = $pdo->query("SELECT ID_CLASSE, NUMERO FROM CLASSE ORDER BY NUMERO")->fetchAll();
+$profs     = $pdo->query("SELECT ID_PROF, NOM_PROF FROM PROF ORDER BY NOM_PROF")->fetchAll();
+$salles    = $pdo->query("SELECT ID_SALLE, NOM_SALLE FROM SALLE ORDER BY NOM_SALLE")->fetchAll();
+$coursList = $pdo->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_COURS")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -83,9 +87,9 @@ $coursList = $conn->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_CO
                         <label>Classe</label>
                         <select name="id_classe">
                             <option value="">— Sélectionner —</option>
-                            <?php while($row = $classes->fetch_assoc()): ?>
+                            <?php foreach($classes as $row): ?>
                                 <option value="<?= $row['ID_CLASSE'] ?>"><?= htmlspecialchars($row['NUMERO']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                         <div class="or-text">ou ajouter</div>
                         <input type="text" name="new_classe" placeholder="Ex: Classe C3">
@@ -95,9 +99,9 @@ $coursList = $conn->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_CO
                         <label>Professeur</label>
                         <select name="id_prof">
                             <option value="">— Sélectionner —</option>
-                            <?php while($row = $profs->fetch_assoc()): ?>
+                            <?php foreach($profs as $row): ?>
                                 <option value="<?= $row['ID_PROF'] ?>"><?= htmlspecialchars($row['NOM_PROF']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                         <div class="or-text">ou ajouter</div>
                         <input type="text" name="new_prof" placeholder="Ex: M. Khalid">
@@ -107,9 +111,9 @@ $coursList = $conn->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_CO
                         <label>Salle</label>
                         <select name="id_salle" required>
                             <option value="">— Sélectionner —</option>
-                            <?php while($row = $salles->fetch_assoc()): ?>
+                            <?php foreach($salles as $row): ?>
                                 <option value="<?= $row['ID_SALLE'] ?>"><?= htmlspecialchars($row['NOM_SALLE']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                         <div class="or-text">ou ajouter sur la carte</div>
                         <a href="carte.php" class="btn-map-add">🗺️ Ajouter une salle</a>
@@ -119,9 +123,9 @@ $coursList = $conn->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_CO
                         <label>Cours</label>
                         <select name="id_cours">
                             <option value="">— Sélectionner —</option>
-                            <?php while($row = $coursList->fetch_assoc()): ?>
+                            <?php foreach($coursList as $row): ?>
                                 <option value="<?= $row['ID_COURS'] ?>"><?= htmlspecialchars($row['NOM_COURS']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                         <div class="or-text">ou ajouter</div>
                         <input type="text" name="new_cours" placeholder="Ex: PHP Avancé">

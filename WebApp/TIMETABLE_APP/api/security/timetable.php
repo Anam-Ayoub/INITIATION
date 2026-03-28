@@ -1,28 +1,28 @@
 <?php
 /**
- * CHRONOS API - Security Timetable Endpoint
- * Returns all schedules for all classes (for security personnel)
+ * API CHRONOS - Point de connexion de l'emploi du temps pour la sécurité
+ * Retourne tous les horaires pour toutes les classes (pour le personnel de sécurité)
  * GET /api/security/timetable.php
  */
 
 require_once __DIR__ . '/../config.php';
 
-// Only accept GET requests
+// Accepter uniquement les requêtes GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     jsonResponse(false, null, 'Method not allowed');
 }
 
-// Validate token and get user
+// Valider le jeton et obtenir l'utilisateur
 $tokenData = getAuthUser($pdo);
 
-// Verify the user is security personnel
+// Vérifier que l'utilisateur fait partie du personnel de sécurité
 if ($tokenData['user_type'] !== 'security') {
     jsonResponse(false, null, 'Access denied. Security personnel only.');
 }
 
 $securityId = $tokenData['user_id'];
 
-// Fetch security name
+// Récupérer le nom de l'agent de sécurité
 $stmt = $pdo->prepare("SELECT FULL_NAME FROM SECURITY WHERE ID_SEC = :id");
 $stmt->execute(['id' => $securityId]);
 $security = $stmt->fetch();
@@ -31,11 +31,11 @@ if (!$security) {
     jsonResponse(false, null, 'Security personnel not found');
 }
 
-// Fetch all rooms with their current status
+// Récupérer toutes les salles avec leur statut actuel
 $stmtRooms = $pdo->query("SELECT ID_SALLE, NOM_SALLE FROM SALLE ORDER BY NOM_SALLE");
 $rooms = $stmtRooms->fetchAll();
 
-// Fetch all schedules grouped by class
+// Récupérer tous les emplois du temps groupés par classe
 $sql = "
     SELECT 
         e.ID_EMPLOI,
@@ -59,7 +59,7 @@ $sql = "
 $stmt = $pdo->query($sql);
 $sessions = $stmt->fetchAll();
 
-// Organize by day and class
+// Organiser par jour et par classe
 $days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 $scheduleByDay = [];
 $classes = [];
@@ -69,7 +69,7 @@ foreach ($days as $day) {
 }
 
 foreach ($sessions as $session) {
-    // Track unique classes
+    // Suivre les classes uniques
     if (!isset($classes[$session['ID_CLASSE']])) {
         $classes[$session['ID_CLASSE']] = [
             'id' => (int)$session['ID_CLASSE'],
