@@ -1,53 +1,134 @@
 <?php
 session_start();
 if (!isset($_SESSION['admin'])) { header("Location: login.php"); exit; }
-include __DIR__ . "/../../config/db.php";
-include __DIR__ . "/../../config/functions.php";
+require_once __DIR__ . "/../../config/db.php";
+require_once __DIR__ . "/../../config/functions.php";
 
-$status = null; $msg_text = "";
+$classes = $pdo->query("SELECT * FROM CLASSE ORDER BY NUMERO")->fetchAll();
+$profs   = $pdo->query("SELECT * FROM PROF ORDER BY NOM_PROF")->fetchAll();
+$salles  = $pdo->query("SELECT * FROM SALLE ORDER BY NOM_SALLE")->fetchAll();
+$cours   = $pdo->query("SELECT * FROM COURS ORDER BY NOM_COURS")->fetchAll();
 
-if (isset($_POST['add'])) {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
-        $status = "error"; $msg_text = "Erreur de sécurité (jeton CSRF invalide).";
-    } else {
-        $jour = $_POST['jour']; $hd = $_POST['heure_debut']; $hf = $_POST['heure_fin'];
-        $id_classe = !empty($_POST['new_classe']) ? getOrCreateId($pdo, 'CLASSE', 'NUMERO', 'ID_CLASSE', $_POST['new_classe']) : $_POST['id_classe'];
-        $id_prof   = !empty($_POST['new_prof'])   ? getOrCreateId($pdo, 'PROF', 'NOM_PROF', 'ID_PROF', $_POST['new_prof']) : $_POST['id_prof'];
-        $id_salle  = !empty($_POST['id_salle'])   ? $_POST['id_salle'] : null;
-        $id_cours  = !empty($_POST['new_cours'])  ? getOrCreateId($pdo, 'COURS', 'NOM_COURS', 'ID_COURS', $_POST['new_cours']) : $_POST['id_cours'];
-
-        $conflits = [];
-        if (existeConflit($pdo, $jour, $hd, $hf, 'ID_CLASSE', $id_classe)) { $conflits[] = "Classe occupée"; }
-        if (existeConflit($pdo, $jour, $hd, $hf, 'ID_PROF', $id_prof))     { $conflits[] = "Professeur occupé"; }
-        if (existeConflit($pdo, $jour, $hd, $hf, 'ID_SALLE', $id_salle))   { $conflits[] = "Salle occupée"; }
-
-        if (!empty($conflits)) {
-            $status = "error"; $msg_text = "Conflit : " . implode(", ", $conflits);
-        } else {
-            try {
-                $st = $pdo->prepare("INSERT INTO EMPLOI_DU_TEMPS (JOUR, HEURE_DEB, HEURE_FIN, ID_CLASSE, ID_PROF, ID_SALLE, ID_COURS) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                if ($st->execute([$jour, $hd, $hf, $id_classe, $id_prof, $id_salle, $id_cours])) { 
-                    $status = "success"; $msg_text = "Séance enregistrée avec succès !"; 
-                }
-            } catch (PDOException $e) {
-                $status = "error"; $msg_text = "Erreur : " . $e->getMessage();
-            }
-        }
-    }
-}
-
-$classes   = $pdo->query("SELECT ID_CLASSE, NUMERO FROM CLASSE ORDER BY NUMERO")->fetchAll();
-$profs     = $pdo->query("SELECT ID_PROF, NOM_PROF FROM PROF ORDER BY NOM_PROF")->fetchAll();
-$salles    = $pdo->query("SELECT ID_SALLE, NOM_SALLE FROM SALLE ORDER BY NOM_SALLE")->fetchAll();
-$coursList = $pdo->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_COURS")->fetchAll();
+$days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+$phases = [
+    ['label' => '08:30 - 10:30', 'hd' => '08:30', 'hf' => '10:30'],
+    ['label' => '10:45 - 12:30', 'hd' => '10:45', 'hf' => '12:30'],
+    ['label' => '14:00 - 16:00', 'hd' => '14:00', 'hf' => '16:00'],
+    ['label' => '16:15 - 18:15', 'hd' => '16:15', 'hf' => '18:15']
+];
 ?>
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ajouter — CHRONOS</title>
-    <link rel="stylesheet" href="../assets/style.css?v=2">
+    <title>Ajouter une séance — CHRONOS</title>
+    <link rel="stylesheet" href="../assets/style.css?v=5">
+    <style>
+        .grid-container {
+            margin-top: 30px;
+            overflow-x: auto;
+        }
+        .timetable-grid {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        .timetable-grid th, .timetable-grid td {
+            border: 1px solid var(--border);
+            padding: 15px;
+            text-align: center;
+            min-width: 150px;
+        }
+        .timetable-grid th {
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .day-cell {
+            font-weight: 700;
+            color: var(--accent-light);
+            background: var(--bg-glass);
+            width: 120px;
+            min-width: 120px;
+        }
+        .slot-cell {
+            cursor: pointer;
+            transition: all var(--transition-fast);
+            position: relative;
+            height: 100px;
+        }
+        .slot-cell:hover {
+            background: var(--bg-glass-hover);
+        }
+        .slot-cell.assigned {
+            background: var(--success-bg);
+            border-color: rgba(16, 185, 129, 0.2);
+        }
+        .slot-cell.assigned:hover {
+            filter: brightness(0.95);
+        }
+        .break-cell {
+            background: #f1f5f9;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-style: italic;
+            width: 80px;
+            min-width: 80px;
+        }
+        .session-info {
+            font-size: 0.85rem;
+            color: var(--success);
+        }
+        .session-info .course { font-weight: 700; display: block; }
+        .session-info .prof { font-size: 0.75rem; color: var(--text-secondary); }
+        .session-info .room { font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 4px;}
+
+        /* Modal Styles */
+        #sessionModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: var(--bg-card);
+            width: 450px;
+            padding: 30px;
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .modal-footer {
+            margin-top: 30px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn-delete-session {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
 </head>
 <body>
     <?php $current_page = 'add'; include __DIR__ . '/../includes/sidebar.php'; ?>
@@ -55,86 +136,234 @@ $coursList = $pdo->query("SELECT ID_COURS, NOM_COURS FROM COURS ORDER BY NOM_COU
     <div class="main-content">
         <div class="page-header">
             <div>
-                <h2>Planifier une séance</h2>
-                <p class="subtitle">Créer un nouveau créneau dans l'emploi du temps</p>
+                <h2>Gestion de l'Emploi du Temps</h2>
+                <p class="subtitle">Sélectionnez une classe pour gérer ses séances</p>
             </div>
         </div>
 
-        <?php if($status): ?>
-            <div class="alert alert-<?= $status ?>"><?= $msg_text ?></div>
-        <?php endif; ?>
+        <div class="filter-section">
+            <label><strong>Classe :</strong></label>
+            <select id="classSelect" style="margin-left:10px; width: 300px;">
+                <option value="">— Sélectionner une classe —</option>
+                <?php foreach($classes as $c): ?>
+                    <option value="<?= $c['ID_CLASSE'] ?>"><?= htmlspecialchars($c['NUMERO']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-        <div class="container">
-            <form method="POST">
-                <?php csrfField(); ?>
-                <div class="form-grid">
-                    <div class="input-group">
-                        <label>Jour</label>
-                        <select name="jour" required>
-                            <option>Lundi</option><option>Mardi</option><option>Mercredi</option>
-                            <option>Jeudi</option><option>Vendredi</option><option>Samedi</option>
-                        </select>
-                    </div>
-                    <div class="input-group">
-                        <label>Horaires</label>
-                        <div style="display:flex;gap:10px;">
-                            <input type="time" name="heure_debut" required style="flex:1">
-                            <input type="time" name="heure_fin" required style="flex:1">
-                        </div>
-                    </div>
+        <div id="alertContainer"></div>
 
-                    <div class="input-group">
-                        <label>Classe</label>
-                        <select name="id_classe">
-                            <option value="">— Sélectionner —</option>
-                            <?php foreach($classes as $row): ?>
-                                <option value="<?= $row['ID_CLASSE'] ?>"><?= htmlspecialchars($row['NUMERO']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="or-text">ou ajouter</div>
-                        <input type="text" name="new_classe" placeholder="Ex: Classe C3">
-                    </div>
+        <div class="grid-container" id="gridContainer" style="display:none;">
+            <table class="timetable-grid">
+                <thead>
+                    <tr>
+                        <th>Jour</th>
+                        <th>08:30 - 10:30</th>
+                        <th>10:45 - 12:30</th>
+                        <th class="break-cell">Pause</th>
+                        <th>14:00 - 16:00</th>
+                        <th>16:15 - 18:15</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($days as $day): ?>
+                    <tr>
+                        <td class="day-cell"><?= $day ?></td>
+                        <td class="slot-cell" data-day="<?= $day ?>" data-phase="0"></td>
+                        <td class="slot-cell" data-day="<?= $day ?>" data-phase="1"></td>
+                        <td class="break-cell">12:30 - 14:00</td>
+                        <td class="slot-cell" data-day="<?= $day ?>" data-phase="2"></td>
+                        <td class="slot-cell" data-day="<?= $day ?>" data-phase="3"></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-                    <div class="input-group">
-                        <label>Professeur</label>
-                        <select name="id_prof">
-                            <option value="">— Sélectionner —</option>
-                            <?php foreach($profs as $row): ?>
-                                <option value="<?= $row['ID_PROF'] ?>"><?= htmlspecialchars($row['NOM_PROF']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="or-text">ou ajouter</div>
-                        <input type="text" name="new_prof" placeholder="Ex: M. Khalid">
-                    </div>
+    <!-- Session Modal -->
+    <div id="sessionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Détails de la séance</h3>
+                <p id="modalSubtitle" class="subtitle"></p>
+            </div>
+            <form id="sessionForm">
+                <input type="hidden" id="modalIdEmploi" name="id_emploi">
+                <input type="hidden" id="modalJour" name="jour">
+                <input type="hidden" id="modalHd" name="hd">
+                <input type="hidden" id="modalHf" name="hf">
 
-                    <div class="input-group">
-                        <label>Salle</label>
-                        <select name="id_salle" required>
-                            <option value="">— Sélectionner —</option>
-                            <?php foreach($salles as $row): ?>
-                                <option value="<?= $row['ID_SALLE'] ?>"><?= htmlspecialchars($row['NOM_SALLE']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="or-text">ou ajouter sur la carte</div>
-                        <a href="carte.php" class="btn-map-add">🗺️ Ajouter une salle</a>
-                    </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>Cours</label>
+                    <select name="id_cours" required>
+                        <option value="">— Sélectionner —</option>
+                        <?php foreach($cours as $co): ?>
+                            <option value="<?= $co['ID_COURS'] ?>"><?= htmlspecialchars($co['NOM_COURS']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-                    <div class="input-group">
-                        <label>Cours</label>
-                        <select name="id_cours">
-                            <option value="">— Sélectionner —</option>
-                            <?php foreach($coursList as $row): ?>
-                                <option value="<?= $row['ID_COURS'] ?>"><?= htmlspecialchars($row['NOM_COURS']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <div class="or-text">ou ajouter</div>
-                        <input type="text" name="new_cours" placeholder="Ex: PHP Avancé">
-                    </div>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>Professeur</label>
+                    <select name="id_prof" required>
+                        <option value="">— Sélectionner —</option>
+                        <?php foreach($profs as $p): ?>
+                            <option value="<?= $p['ID_PROF'] ?>"><?= htmlspecialchars($p['NOM_PROF']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-                    <button type="submit" name="add" class="btn-submit">Enregistrer la séance</button>
+                <div class="form-group" style="margin-bottom:15px;">
+                    <label>Salle</label>
+                    <select name="id_salle" required>
+                        <option value="">— Sélectionner —</option>
+                        <?php foreach($salles as $s): ?>
+                            <option value="<?= $s['ID_SALLE'] ?>"><?= htmlspecialchars($s['NOM_SALLE']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-delete-session" id="deleteBtn" style="display:none;">Supprimer</button>
+                    <button type="button" class="btn-primary" style="background:var(--bg-glass); color:var(--text-primary); border:1px solid var(--border);" onclick="closeModal()">Annuler</button>
+                    <button type="submit" class="btn-primary">Enregistrer</button>
                 </div>
             </form>
         </div>
     </div>
+
+    <script>
+        const classSelect = document.getElementById('classSelect');
+        const gridContainer = document.getElementById('gridContainer');
+        const sessionModal = document.getElementById('sessionModal');
+        const sessionForm = document.getElementById('sessionForm');
+        const alertContainer = document.getElementById('alertContainer');
+        
+        const phases = <?= json_encode($phases) ?>;
+        let currentSessions = [];
+
+        classSelect.addEventListener('change', function() {
+            if (this.value) {
+                gridContainer.style.display = 'block';
+                loadSessions(this.value);
+            } else {
+                gridContainer.style.display = 'none';
+            }
+        });
+
+        function loadSessions(idClasse) {
+            fetch(`api_sessions.php?action=get_sessions&id_classe=${idClasse}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        currentSessions = data.sessions;
+                        renderGrid();
+                    }
+                });
+        }
+
+        function renderGrid() {
+            document.querySelectorAll('.slot-cell').forEach(cell => {
+                const day = cell.dataset.day;
+                const phaseIdx = cell.dataset.phase;
+                const phase = phases[phaseIdx];
+                
+                cell.classList.remove('assigned');
+                cell.innerHTML = '';
+                cell.onclick = () => openModal(day, phaseIdx);
+
+                const session = currentSessions.find(s => s.JOUR === day && s.hd === phase.hd);
+                if (session) {
+                    cell.classList.add('assigned');
+                    cell.innerHTML = `
+                        <div class="session-info">
+                            <span class="course">${session.NOM_COURS}</span>
+                            <span class="prof">${session.NOM_PROF}</span>
+                            <span class="room">🏢 ${session.NOM_SALLE}</span>
+                        </div>
+                    `;
+                    cell.onclick = () => openModal(day, phaseIdx, session);
+                }
+            });
+        }
+
+        function openModal(day, phaseIdx, session = null) {
+            const phase = phases[phaseIdx];
+            document.getElementById('modalJour').value = day;
+            document.getElementById('modalHd').value = phase.hd;
+            document.getElementById('modalHf').value = phase.hf;
+            document.getElementById('modalSubtitle').textContent = `${day} | ${phase.label}`;
+            
+            if (session) {
+                document.getElementById('modalTitle').textContent = "Modifier la séance";
+                document.getElementById('modalIdEmploi').value = session.ID_EMPLOI;
+                sessionForm.id_cours.value = session.ID_COURS;
+                sessionForm.id_prof.value = session.ID_PROF;
+                sessionForm.id_salle.value = session.ID_SALLE;
+                document.getElementById('deleteBtn').style.display = 'block';
+                document.getElementById('deleteBtn').onclick = () => deleteSession(session.ID_EMPLOI);
+            } else {
+                document.getElementById('modalTitle').textContent = "Nouvelle séance";
+                document.getElementById('modalIdEmploi').value = "";
+                sessionForm.reset();
+                document.getElementById('deleteBtn').style.display = 'none';
+            }
+            
+            sessionModal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            sessionModal.style.display = 'none';
+        }
+
+        sessionForm.onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(sessionForm);
+            const data = Object.fromEntries(formData.entries());
+            data.id_classe = classSelect.value;
+
+            fetch('api_sessions.php?action=save_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Séance enregistrée avec succès');
+                    closeModal();
+                    loadSessions(classSelect.value);
+                } else {
+                    showAlert('error', data.message);
+                }
+            });
+        };
+
+        function deleteSession(idEmploi) {
+            if (!confirm('Voulez-vous vraiment supprimer cette séance ?')) return;
+
+            fetch('api_sessions.php?action=delete_session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_emploi: idEmploi })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', 'Séance supprimée');
+                    closeModal();
+                    loadSessions(classSelect.value);
+                } else {
+                    showAlert('error', data.message);
+                }
+            });
+        }
+
+        function showAlert(type, message) {
+            alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => alertContainer.innerHTML = '', 3000);
+        }
+    </script>
 </body>
 </html>

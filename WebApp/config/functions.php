@@ -7,23 +7,20 @@
  * Obtenir un ID existant ou créer un nouvel enregistrement dans une table de référence.
  * Utilisé pour la création automatique de professeurs, classes, salles, cours.
  */
-function getOrCreateId($conn, $table, $column_name, $id_column, $value) {
+function getOrCreateId($pdo, $table, $column_name, $id_column, $value) {
     if (empty($value)) return null;
 
     // Vérifier si l'élément existe déjà
-    $stmt = $conn->prepare("SELECT $id_column FROM $table WHERE $column_name = ?");
-    $stmt->bind_param("s", $value);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $stmt = $pdo->prepare("SELECT $id_column FROM $table WHERE $column_name = ?");
+    $stmt->execute([$value]);
 
-    if ($row = $result->fetch_assoc()) {
+    if ($row = $stmt->fetch()) {
         return $row[$id_column];
     } else {
         // Le créer
-        $stmt_ins = $conn->prepare("INSERT INTO $table ($column_name) VALUES (?)");
-        $stmt_ins->bind_param("s", $value);
-        $stmt_ins->execute();
-        return $conn->insert_id;
+        $stmt_ins = $pdo->prepare("INSERT INTO $table ($column_name) VALUES (?)");
+        $stmt_ins->execute([$value]);
+        return $pdo->lastInsertId();
     }
 }
 
@@ -31,17 +28,15 @@ function getOrCreateId($conn, $table, $column_name, $id_column, $value) {
  * Vérifier les conflits de planification (pour l'insertion).
  * Retourne vrai si un conflit existe.
  */
-function existeConflit($conn, $jour, $hd, $hf, $colonne, $valeur) {
+function existeConflit($pdo, $jour, $hd, $hf, $colonne, $valeur) {
     if (!$valeur) return false;
     $sql = "SELECT COUNT(*) as total FROM EMPLOI_DU_TEMPS 
             WHERE JOUR = ? AND $colonne = ? 
             AND (? < HEURE_FIN AND ? > HEURE_DEB)";
     
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("siss", $jour, $valeur, $hd, $hf);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$jour, $valeur, $hd, $hf]);
+    $row = $stmt->fetch();
     return $row['total'] > 0;
 }
 
@@ -49,7 +44,7 @@ function existeConflit($conn, $jour, $hd, $hf, $colonne, $valeur) {
  * Vérifier les conflits de planification (pour la mise à jour).
  * Exclut l'enregistrement actuel en cours de mise à jour.
  */
-function existeConflitUpdate($conn, $jour, $hd, $hf, $colonne, $valeur, $id_actuel) {
+function existeConflitUpdate($pdo, $jour, $hd, $hf, $colonne, $valeur, $id_actuel) {
     if (!$valeur) return false;
     
     $sql = "SELECT COUNT(*) as total FROM EMPLOI_DU_TEMPS 
@@ -58,12 +53,10 @@ function existeConflitUpdate($conn, $jour, $hd, $hf, $colonne, $valeur, $id_actu
             AND ID_EMPLOI != ?
             AND (? < HEURE_FIN AND ? > HEURE_DEB)";
             
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("siiss", $jour, $valeur, $id_actuel, $hd, $hf);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$jour, $valeur, $id_actuel, $hd, $hf]);
     
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $row = $result->fetch_assoc();
+    $row = $stmt->fetch();
     return $row['total'] > 0;
 }
 
@@ -90,7 +83,7 @@ function validateCsrfToken($token) {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-// Alias for Users_interface backward compatibility
+// Alias pour la rétrocompatibilité de l'interface utilisateur
 function verifyCsrfToken($token) {
     return validateCsrfToken($token);
 }
