@@ -671,6 +671,8 @@ p.description-paragraph {
     margin-top: 2.5rem;
     display: flex;
     justify-content: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .cta-button {
