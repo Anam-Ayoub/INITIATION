@@ -176,15 +176,19 @@ if (isset($_POST['login'])) {
         <div class="error-msg"><?php echo htmlspecialchars($error); ?></div>
     <?php endif; ?>
 
+    <div style="background: rgba(99, 102, 241, 0.08); color: #4f46e5; padding: 12px; border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; border: 1px solid rgba(99, 102, 241, 0.2); text-align: left;">
+        <strong>Information :</strong> Les identifiants ont été pré-remplis pour faciliter les tests. Cliquez simplement sur "Se connecter".
+    </div>
+
     <form method="POST">
         <div class="form-group">
             <label for="username">Nom d'utilisateur</label>
-            <input type="text" name="username" id="username" placeholder="admin" required>
+            <input type="text" name="username" id="username" value="admin" required>
         </div>
 
         <div class="form-group">
             <label for="password">Mot de passe</label>
-            <input type="password" name="password" id="password" placeholder="••••••••" required>
+            <input type="password" name="password" id="password" value="pass" required>
         </div>
 
         <button type="submit" name="login" class="btn-login">Se connecter</button>

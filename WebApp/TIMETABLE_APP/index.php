@@ -86,6 +86,8 @@
             .hero-content {
                 max-width: 600px;
                 animation: fadeUp 0.8s ease;
+                position: relative;
+                z-index: 10;
             }
 
             .hero-icon {
@@ -160,6 +162,7 @@
                 opacity: 0.25;
                 animation: float 8s ease-in-out infinite;
                 z-index: 0;
+                pointer-events: none;
             }
             .orb-1 { width: 300px; height: 300px; background: #6366f1; top: 10%; left: 10%; }
             .orb-2 { width: 200px; height: 200px; background: #8b5cf6; bottom: 20%; right: 15%; animation-delay: 3s; }
