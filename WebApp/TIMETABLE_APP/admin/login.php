@@ -11,7 +11,7 @@ if (isset($_POST['login'])) {
     $stmt->execute([$username]);
 
     if ($row = $stmt->fetch()) {
-        if (password_verify($password, $row['PASSWORD'])) {
+        if ($password === $row['PASSWORD']) {
             session_regenerate_id(true);
             $_SESSION['admin'] = $row['USERNAME'];
             header("Location: dashboard.php");

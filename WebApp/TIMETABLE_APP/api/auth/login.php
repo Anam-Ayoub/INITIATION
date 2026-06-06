@@ -35,21 +35,21 @@ $user = $stmt->fetch();
 
 $userType = 'student';
 
-if (!$user || !password_verify($password, $user['PASSWORD'])) {
+if (!$user || $password !== $user['PASSWORD']) {
     // Essayer professeur
     $stmt = $pdo->prepare("SELECT ID_PROF, NOM_PROF as FULL_NAME, EMAIL, PASSWORD FROM PROF WHERE EMAIL = :email LIMIT 1");
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch();
     $userType = 'professor';
     
-    if (!$user || !password_verify($password, $user['PASSWORD'])) {
+    if (!$user || $password !== $user['PASSWORD']) {
         // Essayer sécurité
         $stmt = $pdo->prepare("SELECT ID_SEC, FULL_NAME, EMAIL, PASSWORD FROM SECURITY WHERE EMAIL = :email LIMIT 1");
         $stmt->execute(['email' => $email]);
         $user = $stmt->fetch();
         $userType = 'security';
         
-        if (!$user || !password_verify($password, $user['PASSWORD'])) {
+        if (!$user || $password !== $user['PASSWORD']) {
             jsonResponse(false, null, 'Invalid email or password');
         }
     }

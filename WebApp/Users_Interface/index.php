@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $stmt->execute(['email' => $email]);
             $student = $stmt->fetch();
 
-            if ($student && password_verify($password, $student['PASSWORD'])) {
+            if ($student && $password === $student['PASSWORD']) {
                 // Connexion réussie de l'étudiant
                 $_SESSION['STUDENT_ID'] = $student['ID_STUDENT'];
                 $_SESSION['STUDENT_NAME'] = $student['FULL_NAME'];
@@ -41,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $stmtProf->execute(['email' => $email]);
                 $prof = $stmtProf->fetch();
 
-                if ($prof && password_verify($password, $prof['PASSWORD'])) {
+                if ($prof && $password === $prof['PASSWORD']) {
                     // Connexion réussie du professeur
                     $_SESSION['PROF_ID'] = $prof['ID_PROF'];
                     $_SESSION['PROF_NAME'] = $prof['NOM_PROF'];
@@ -54,7 +54,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $stmtSec->execute(['email' => $email]);
                     $sec = $stmtSec->fetch();
 
-                    if ($sec && password_verify($password, $sec['PASSWORD'])) {
+                    if ($sec && $password === $sec['PASSWORD']) {
                         // Connexion réussie de l'agent de sécurité
                         $_SESSION['SEC_ID'] = $sec['ID_SEC'];
                         $_SESSION['SEC_NAME'] = $sec['FULL_NAME'];
